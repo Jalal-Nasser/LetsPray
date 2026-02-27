@@ -1,0 +1,352 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+
+const METHODS = [
+    'MuslimWorldLeague', 'ISNA', 'Egyptian', 'UmmAlQura', 'Karachi',
+    'Tehran', 'Dubai', 'Kuwait', 'Qatar', 'Singapore', 'MoonsightingCommittee',
+];
+
+const PRAYER_KEYS = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+const CITIES = [
+    { city: 'مكة المكرمة', cityEn: 'Makkah', country: 'السعودية', countryEn: 'Saudi Arabia', lat: 21.4225, lon: 39.8262, tz: 'Asia/Riyadh' },
+    { city: 'المدينة المنورة', cityEn: 'Madinah', country: 'السعودية', countryEn: 'Saudi Arabia', lat: 24.4672, lon: 39.6024, tz: 'Asia/Riyadh' },
+    { city: 'الرياض', cityEn: 'Riyadh', country: 'السعودية', countryEn: 'Saudi Arabia', lat: 24.7136, lon: 46.6753, tz: 'Asia/Riyadh' },
+    { city: 'جدة', cityEn: 'Jeddah', country: 'السعودية', countryEn: 'Saudi Arabia', lat: 21.5433, lon: 39.1728, tz: 'Asia/Riyadh' },
+    { city: 'القاهرة', cityEn: 'Cairo', country: 'مصر', countryEn: 'Egypt', lat: 30.0444, lon: 31.2357, tz: 'Africa/Cairo' },
+    { city: 'إسطنبول', cityEn: 'Istanbul', country: 'تركيا', countryEn: 'Turkey', lat: 41.0082, lon: 28.9784, tz: 'Europe/Istanbul' },
+    { city: 'دبي', cityEn: 'Dubai', country: 'الإمارات', countryEn: 'UAE', lat: 25.2048, lon: 55.2708, tz: 'Asia/Dubai' },
+    { city: 'كوالالمبور', cityEn: 'Kuala Lumpur', country: 'ماليزيا', countryEn: 'Malaysia', lat: 3.1390, lon: 101.6869, tz: 'Asia/Kuala_Lumpur' },
+    { city: 'جاكرتا', cityEn: 'Jakarta', country: 'إندونيسيا', countryEn: 'Indonesia', lat: -6.2088, lon: 106.8456, tz: 'Asia/Jakarta' },
+    { city: 'لندن', cityEn: 'London', country: 'بريطانيا', countryEn: 'UK', lat: 51.5074, lon: -0.1278, tz: 'Europe/London' },
+    { city: 'نيويورك', cityEn: 'New York', country: 'أمريكا', countryEn: 'USA', lat: 40.7128, lon: -74.0060, tz: 'America/New_York' },
+    { city: 'تورنتو', cityEn: 'Toronto', country: 'كندا', countryEn: 'Canada', lat: 43.6511, lon: -79.3470, tz: 'America/Toronto' },
+    { city: 'باريس', cityEn: 'Paris', country: 'فرنسا', countryEn: 'France', lat: 48.8566, lon: 2.3522, tz: 'Europe/Paris' },
+    { city: 'عمّان', cityEn: 'Amman', country: 'الأردن', countryEn: 'Jordan', lat: 31.9454, lon: 35.9284, tz: 'Asia/Amman' },
+    { city: 'بغداد', cityEn: 'Baghdad', country: 'العراق', countryEn: 'Iraq', lat: 33.3152, lon: 44.3661, tz: 'Asia/Baghdad' },
+    { city: 'الدوحة', cityEn: 'Doha', country: 'قطر', countryEn: 'Qatar', lat: 25.2854, lon: 51.5310, tz: 'Asia/Qatar' },
+    { city: 'الكويت', cityEn: 'Kuwait City', country: 'الكويت', countryEn: 'Kuwait', lat: 29.3759, lon: 47.9774, tz: 'Asia/Kuwait' },
+    { city: 'بيروت', cityEn: 'Beirut', country: 'لبنان', countryEn: 'Lebanon', lat: 33.8938, lon: 35.5018, tz: 'Asia/Beirut' },
+    { city: 'إسلام آباد', cityEn: 'Islamabad', country: 'باكستان', countryEn: 'Pakistan', lat: 33.6844, lon: 73.0479, tz: 'Asia/Karachi' },
+    { city: 'دكا', cityEn: 'Dhaka', country: 'بنغلادش', countryEn: 'Bangladesh', lat: 23.8103, lon: 90.4125, tz: 'Asia/Dhaka' },
+    { city: 'الدار البيضاء', cityEn: 'Casablanca', country: 'المغرب', countryEn: 'Morocco', lat: 33.5731, lon: -7.5898, tz: 'Africa/Casablanca' },
+    { city: 'صنعاء', cityEn: "Sana'a", country: 'اليمن', countryEn: 'Yemen', lat: 15.3694, lon: 44.1910, tz: 'Asia/Aden' },
+    { city: 'مسقط', cityEn: 'Muscat', country: 'عُمان', countryEn: 'Oman', lat: 23.5880, lon: 58.3829, tz: 'Asia/Muscat' },
+    { city: 'الخرطوم', cityEn: 'Khartoum', country: 'السودان', countryEn: 'Sudan', lat: 15.5007, lon: 32.5599, tz: 'Africa/Khartoum' },
+    { city: 'الجزائر', cityEn: 'Algiers', country: 'الجزائر', countryEn: 'Algeria', lat: 36.7538, lon: 3.0588, tz: 'Africa/Algiers' },
+    { city: 'سيدني', cityEn: 'Sydney', country: 'أستراليا', countryEn: 'Australia', lat: -33.8688, lon: 151.2093, tz: 'Australia/Sydney' },
+    { city: 'لوس أنجلوس', cityEn: 'Los Angeles', country: 'أمريكا', countryEn: 'USA', lat: 34.0522, lon: -118.2437, tz: 'America/Los_Angeles' },
+];
+
+// Muezzin list with LOCAL bundled audio files
+const MUEZZINS = [
+    { id: 'mishary', nameAr: 'مشاري العفاسي', nameEn: 'Mishary Alafasy', originAr: 'الكويت', originEn: 'Kuwait', icon: '🎙', audioFile: '/audio/mishary.mp3' },
+    { id: 'abdulbasit', nameAr: 'عبد الباسط عبد الصمد', nameEn: 'Abdul Basit', originAr: 'مصر', originEn: 'Egypt', icon: '📿', audioFile: '/audio/abdulbasit.mp3' },
+    { id: 'sudais', nameAr: 'عبد الرحمن السديس', nameEn: 'Abdurrahman As-Sudais', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🕋', audioFile: '/audio/sudais.mp3' },
+    { id: 'shuraim', nameAr: 'سعود الشريم', nameEn: 'Saud Ash-Shuraim', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🕌', audioFile: '/audio/shuraim.mp3' },
+    { id: 'husary', nameAr: 'محمود خليل الحصري', nameEn: 'Mahmoud Al-Husary', originAr: 'مصر', originEn: 'Egypt', icon: '🌙', audioFile: '/audio/husary.mp3' },
+    { id: 'minshawi', nameAr: 'محمد صديق المنشاوي', nameEn: 'Muhammad Al-Minshawi', originAr: 'مصر', originEn: 'Egypt', icon: '🌅', audioFile: '/audio/minshawi.mp3' },
+];
+
+const DEFAULT_SETTINGS = {
+    location: null, calculationMethod: 'UmmAlQura', madhab: 'Shafi', language: 'ar',
+    theme: 'dark', timeFormat: '12h', audioEnabled: true, notificationsEnabled: true,
+    autoStart: false, highLatitudeRule: 'MiddleOfTheNight',
+    offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 }, muezzin: 'mishary',
+};
+
+export default function Settings({ settings, onUpdate, onBack }) {
+    const { t, i18n } = useTranslation();
+    const [detecting, setDetecting] = useState(false);
+    const [playingId, setPlayingId] = useState(null);
+    const [showResetConfirm, setShowResetConfirm] = useState(false);
+    const [showAbout, setShowAbout] = useState(false);
+    const [feedback, setFeedback] = useState('');
+    const [feedbackSent, setFeedbackSent] = useState(false);
+    const audioRef = useRef(null);
+    const isArabic = i18n.language === 'ar';
+
+    useEffect(() => () => { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } }, []);
+
+    const handleCityChange = (e) => {
+        const idx = parseInt(e.target.value, 10);
+        if (idx >= 0) {
+            const c = CITIES[idx];
+            onUpdate('location', { city: isArabic ? c.city : c.cityEn, country: isArabic ? c.country : c.countryEn, lat: c.lat, lon: c.lon, timezone: c.tz });
+        }
+    };
+
+    const handleAutoDetect = async () => {
+        setDetecting(true);
+        try {
+            let data = null;
+            try { const r = await fetch('https://ipapi.co/json/'); if (r.ok) data = await r.json(); } catch { }
+            if (!data?.latitude) { try { const r = await fetch('https://ipwho.is/'); if (r.ok) { const d = await r.json(); data = { city: d.city, country_name: d.country, latitude: d.latitude, longitude: d.longitude, timezone: d.timezone?.id }; } } catch { } }
+            if (data?.latitude) {
+                onUpdate('location', { city: data.city || 'Unknown', country: data.country_name || data.country || '', lat: data.latitude, lon: data.longitude, timezone: data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone });
+            }
+        } catch (err) { console.error('Auto-detect failed:', err); }
+        setDetecting(false);
+    };
+
+    const handlePlayMuezzin = (m) => {
+        if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+        if (playingId === m.id) { setPlayingId(null); return; }
+
+        const audio = new Audio(m.audioFile);
+        audioRef.current = audio;
+        setPlayingId(m.id);
+        audio.play().catch(() => setPlayingId(null));
+        audio.onended = () => { setPlayingId(null); audioRef.current = null; };
+        audio.onerror = () => { setPlayingId(null); audioRef.current = null; };
+    };
+
+    const handleResetSettings = () => {
+        Object.entries(DEFAULT_SETTINGS).forEach(([k, v]) => onUpdate(k, v));
+        setShowResetConfirm(false);
+        handleAutoDetect();
+    };
+
+    const openLink = (url) => {
+        if (window.electronAPI?.openExternal) window.electronAPI.openExternal(url);
+        else window.open(url, '_blank');
+    };
+
+    const handleSendFeedback = () => {
+        if (!feedback.trim()) return;
+        // Open email with feedback
+        const subject = encodeURIComponent('حي على الصلاة - Feedback');
+        const body = encodeURIComponent(feedback);
+        openLink(`mailto:feedback@mdeploy.dev?subject=${subject}&body=${body}`);
+        setFeedbackSent(true);
+        setTimeout(() => setFeedbackSent(false), 3000);
+        setFeedback('');
+    };
+
+    const currentCityIdx = CITIES.findIndex(c => Math.abs(c.lat - (settings.location?.lat || 0)) < 0.01 && Math.abs(c.lon - (settings.location?.lon || 0)) < 0.01);
+
+    return (
+        <div className="settings-page">
+            <div className="settings-header">
+                <button className="settings-back" onClick={onBack}>←</button>
+                <h2 className="settings-title">{t('settings.title')}</h2>
+            </div>
+
+            <div className="settings-grid">
+                {/* Location */}
+                <div className="settings-group">
+                    <div className="settings-group-label">{t('settings.location')}</div>
+                    <div className="settings-item">
+                        <span className="settings-label">{t('settings.city')}</span>
+                        <select className="settings-select" value={currentCityIdx} onChange={handleCityChange}>
+                            <option value={-1}>-- {t('settings.city')} --</option>
+                            {CITIES.map((c, i) => (<option key={i} value={i}>{isArabic ? c.city : c.cityEn}, {isArabic ? c.country : c.countryEn}</option>))}
+                        </select>
+                    </div>
+                    <div className="settings-item">
+                        <span className="settings-label">{t('home.detectLocation')}</span>
+                        <button className="detect-btn" onClick={handleAutoDetect} disabled={detecting}>📍 {detecting ? t('home.detecting') : t('home.detectLocation')}</button>
+                    </div>
+                    {settings.location?.city && (
+                        <div className="settings-item" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                            <span>📍 {settings.location.city}, {settings.location.country}</span>
+                            <span>{settings.location.lat?.toFixed(4)}, {settings.location.lon?.toFixed(4)}</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Calculation Method */}
+                <div className="settings-group">
+                    <div className="settings-group-label">{t('settings.calculationMethod')}</div>
+                    <div className="settings-item">
+                        <select className="settings-select" style={{ maxWidth: '100%', width: '100%' }} value={settings.calculationMethod} onChange={(e) => onUpdate('calculationMethod', e.target.value)}>
+                            {METHODS.map(m => <option key={m} value={m}>{t(`methods.${m}`)}</option>)}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Madhab */}
+                <div className="settings-group">
+                    <div className="settings-group-label">{t('settings.madhab')}</div>
+                    <div className="settings-item">
+                        <select className="settings-select" value={settings.madhab} onChange={(e) => onUpdate('madhab', e.target.value)}>
+                            <option value="Shafi">{t('madhabs.Shafi')}</option>
+                            <option value="Hanafi">{t('madhabs.Hanafi')}</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Language */}
+                <div className="settings-group">
+                    <div className="settings-group-label">{t('settings.language')}</div>
+                    <div className="settings-item">
+                        <span className="settings-label">{t('settings.language')}</span>
+                        <select className="settings-select" value={settings.language} onChange={(e) => onUpdate('language', e.target.value)}>
+                            <option value="ar">العربية</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Theme */}
+                <div className="settings-group">
+                    <div className="settings-group-label">{t('settings.theme')}</div>
+                    <div className="settings-item">
+                        <span className="settings-label">{t('settings.theme')}</span>
+                        <select className="settings-select" value={settings.theme || 'dark'} onChange={(e) => onUpdate('theme', e.target.value)}>
+                            <option value="dark">🌙 {t('settings.dark')}</option>
+                            <option value="light">☀️ {t('settings.light')}</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Time Format */}
+                <div className="settings-group">
+                    <div className="settings-group-label">{t('settings.timeFormat')}</div>
+                    <div className="settings-item">
+                        <span className="settings-label">{t('settings.timeFormat')}</span>
+                        <select className="settings-select" value={settings.timeFormat} onChange={(e) => onUpdate('timeFormat', e.target.value)}>
+                            <option value="12h">12h (AM/PM)</option>
+                            <option value="24h">24h</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Audio + Notifications */}
+                <div className="settings-group">
+                    <div className="settings-group-label">{t('settings.audio')}</div>
+                    <div className="settings-item">
+                        <span className="settings-label">{t('settings.audioEnabled')}</span>
+                        <label className="toggle"><input type="checkbox" checked={settings.audioEnabled} onChange={(e) => onUpdate('audioEnabled', e.target.checked)} /><span className="toggle-slider" /></label>
+                    </div>
+                    <div className="settings-item">
+                        <span className="settings-label">{t('settings.notificationsEnabled')}</span>
+                        <label className="toggle"><input type="checkbox" checked={settings.notificationsEnabled} onChange={(e) => onUpdate('notificationsEnabled', e.target.checked)} /><span className="toggle-slider" /></label>
+                    </div>
+                </div>
+
+                {/* High Latitude Rule */}
+                <div className="settings-group">
+                    <div className="settings-group-label">{t('settings.highLatitudeRule')}</div>
+                    <div className="settings-item">
+                        <select className="settings-select" style={{ maxWidth: '100%', width: '100%' }} value={settings.highLatitudeRule} onChange={(e) => onUpdate('highLatitudeRule', e.target.value)}>
+                            <option value="MiddleOfTheNight">{t('highLatRules.MiddleOfTheNight')}</option>
+                            <option value="SeventhOfTheNight">{t('highLatRules.SeventhOfTheNight')}</option>
+                            <option value="TwilightAngle">{t('highLatRules.TwilightAngle')}</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Muezzin / Reciter Selection ── */}
+            <div className="settings-group" style={{ marginTop: '20px' }}>
+                <div className="settings-group-label">{isArabic ? 'صوت المؤذن / القارئ' : 'Muezzin / Reciter Voice'}</div>
+                <div className="muezzin-grid">
+                    {MUEZZINS.map(m => (
+                        <div key={m.id} className={`muezzin-card ${settings.muezzin === m.id ? 'selected' : ''}`} onClick={() => onUpdate('muezzin', m.id)}>
+                            <div className="muezzin-avatar">{m.icon}</div>
+                            <div className="muezzin-info">
+                                <div className="muezzin-name">{isArabic ? m.nameAr : m.nameEn}</div>
+                                <div className="muezzin-origin">{isArabic ? m.originAr : m.originEn}</div>
+                            </div>
+                            <button className={`muezzin-play ${playingId === m.id ? 'playing' : ''}`}
+                                onClick={(e) => { e.stopPropagation(); handlePlayMuezzin(m); }}
+                                title={playingId === m.id ? (isArabic ? 'إيقاف' : 'Stop') : (isArabic ? 'استمع' : 'Preview')}>
+                                {playingId === m.id ? '⏹' : '▶'}
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* ── Per-Prayer Offsets ── */}
+            <div className="settings-group" style={{ marginTop: '20px' }}>
+                <div className="settings-group-label">{t('settings.offsets')}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                    {PRAYER_KEYS.map(key => (
+                        <div className="settings-item" key={key}>
+                            <span className="settings-label">{t(`prayers.${key}`)}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <input className="offset-input" type="number" value={settings.offsets?.[key] || 0}
+                                    onChange={(e) => { const v = parseInt(e.target.value, 10) || 0; onUpdate('offsets', { ...settings.offsets, [key]: v }); }} />
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t('settings.minutes')}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* ── Feedback ── */}
+            <div className="settings-group" style={{ marginTop: '20px' }}>
+                <div className="settings-group-label">{isArabic ? '💬 ملاحظات واقتراحات' : '💬 Feedback'}</div>
+                <textarea
+                    className="feedback-input"
+                    placeholder={isArabic ? 'اكتب ملاحظاتك أو اقتراحاتك هنا...' : 'Write your feedback or suggestions here...'}
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    rows={3}
+                />
+                <button className="detect-btn" onClick={handleSendFeedback} style={{ marginTop: '8px' }}>
+                    {feedbackSent ? (isArabic ? '✅ تم الإرسال!' : '✅ Sent!') : (isArabic ? '📧 إرسال الملاحظات' : '📧 Send Feedback')}
+                </button>
+            </div>
+
+            {/* ── About / Version ── */}
+            <div className="settings-group" style={{ marginTop: '20px' }}>
+                <div className="settings-group-label">{isArabic ? 'حول التطبيق' : 'About'}</div>
+                <div className="about-card" onClick={() => setShowAbout(!showAbout)}>
+                    <img src="/hilal-logo.svg" alt="Logo" className="about-logo" />
+                    <div className="about-info">
+                        <div className="about-name">{isArabic ? 'حي على الصلاة' : 'Live to Pray'}</div>
+                        <div className="about-version">v1.0.0</div>
+                    </div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{showAbout ? '▲' : '▼'}</span>
+                </div>
+                {showAbout && (
+                    <div className="about-details">
+                        <p>{isArabic ? 'تطبيق مواقيت الصلاة والأذان لسطح المكتب' : 'Desktop Prayer Times & Azan Application'}</p>
+                        <p>{isArabic ? 'مبني بـ Electron + React + Vite' : 'Built with Electron + React + Vite'}</p>
+                        <p>{isArabic ? 'محرك حساب الصلاة: adhan.js' : 'Prayer engine: adhan.js'}</p>
+                        <div className="about-links">
+                            <button className="about-link" onClick={() => openLink('https://github.com/Jalal-Nasser')}>
+                                GitHub
+                            </button>
+                            <button className="about-link" onClick={() => openLink('https://mdeploy.dev')}>
+                                mDeploy
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* ── Reset Settings ── */}
+            <div className="settings-group" style={{ marginTop: '20px' }}>
+                <button className="reset-btn" onClick={() => setShowResetConfirm(true)}>
+                    🔄 {isArabic ? 'إعادة تعيين الإعدادات' : 'Reset All Settings'}
+                </button>
+            </div>
+
+            {/* ── Copyright Footer ── */}
+            <footer className="app-footer">
+                <span>© 2026 </span>
+                <a className="footer-link" onClick={() => openLink('https://mdeploy.dev')}>mDeploy</a>
+                <span>. All rights reserved. · Developed by </span>
+                <a className="footer-link" onClick={() => openLink('https://github.com/Jalal-Nasser')}>Jalal Nasser</a>
+            </footer>
+
+            {/* Reset Confirmation Dialog */}
+            {showResetConfirm && (
+                <div className="reset-confirm-overlay" onClick={() => setShowResetConfirm(false)}>
+                    <div className="reset-confirm-dialog" onClick={(e) => e.stopPropagation()}>
+                        <div className="reset-confirm-title">{isArabic ? '⚠️ إعادة تعيين الإعدادات' : '⚠️ Reset Settings'}</div>
+                        <div className="reset-confirm-text">{isArabic ? 'هل أنت متأكد؟ سيتم إعادة جميع الإعدادات إلى الوضع الافتراضي.' : 'Are you sure? All settings will be restored to default values.'}</div>
+                        <div className="reset-confirm-btns">
+                            <button className="reset-confirm-yes" onClick={handleResetSettings}>{isArabic ? 'نعم، إعادة تعيين' : 'Yes, Reset'}</button>
+                            <button className="reset-confirm-no" onClick={() => setShowResetConfirm(false)}>{isArabic ? 'إلغاء' : 'Cancel'}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

@@ -1,0 +1,79 @@
+{
+    "app": {
+        "title": "حي على الصلاة",
+        "subtitle": "مواقيت الصلاة لعبادتك اليومية",
+        "loading": "جاري التحميل..."
+    },
+    "prayers": {
+        "fajr": "الفجر",
+        "sunrise": "الشروق",
+        "dhuhr": "الظهر",
+        "asr": "العصر",
+        "maghrib": "المغرب",
+        "isha": "العشاء"
+    },
+    "home": {
+        "nextPrayer": "الصلاة القادمة",
+        "timeUntil": "الوقت المتبقي حتى",
+        "timeRemaining": "الوقت المتبقي",
+        "todayPrayers": "مواقيت صلاة اليوم",
+        "noLocation": "لم يتم تحديد الموقع",
+        "setLocation": "تحديد الموقع",
+        "detectLocation": "كشف الموقع تلقائياً",
+        "detecting": "جاري الكشف...",
+        "hijriDate": "التاريخ الهجري",
+        "hours": "ساعات",
+        "minutes": "دقائق",
+        "seconds": "ثوانٍ",
+        "qibla": "القبلة",
+        "settings": "الإعدادات",
+        "currentTime": "الوقت الحالي"
+    },
+    "settings": {
+        "title": "الإعدادات",
+        "location": "الموقع",
+        "city": "المدينة",
+        "country": "البلد",
+        "latitude": "خط العرض",
+        "longitude": "خط الطول",
+        "calculationMethod": "طريقة الحساب",
+        "madhab": "المذهب",
+        "language": "اللغة",
+        "theme": "المظهر",
+        "dark": "داكن",
+        "light": "فاتح",
+        "timeFormat": "تنسيق الوقت",
+        "audio": "صوت الأذان",
+        "audioEnabled": "تفعيل صوت الأذان",
+        "notifications": "الإشعارات",
+        "notificationsEnabled": "تفعيل الإشعارات",
+        "autoStart": "التشغيل عند بدء النظام",
+        "highLatitudeRule": "قاعدة العرض العالي",
+        "offsets": "تعديل أوقات الصلاة",
+        "minutes": "دقيقة",
+        "save": "حفظ",
+        "back": "رجوع"
+    },
+    "methods": {
+        "MuslimWorldLeague": "رابطة العالم الإسلامي",
+        "ISNA": "الجمعية الإسلامية في أمريكا الشمالية",
+        "Egyptian": "الهيئة العامة المصرية للمساحة",
+        "UmmAlQura": "أم القرى (مكة)",
+        "Karachi": "جامعة كراتشي",
+        "Tehran": "طهران",
+        "Dubai": "دبي",
+        "Kuwait": "الكويت",
+        "Qatar": "قطر",
+        "Singapore": "سنغافورة",
+        "MoonsightingCommittee": "لجنة رؤية الهلال"
+    },
+    "madhabs": {
+        "Shafi": "الشافعي",
+        "Hanafi": "الحنفي"
+    },
+    "highLatRules": {
+        "MiddleOfTheNight": "منتصف الليل",
+        "SeventhOfTheNight": "سُبع الليل",
+        "TwilightAngle": "زاوية الشفق"
+    }
+}

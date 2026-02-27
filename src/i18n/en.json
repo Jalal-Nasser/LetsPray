@@ -1,0 +1,79 @@
+{
+    "app": {
+        "title": "Live to Pray",
+        "subtitle": "Prayer times for your daily worship",
+        "loading": "Loading..."
+    },
+    "prayers": {
+        "fajr": "Fajr",
+        "sunrise": "Sunrise",
+        "dhuhr": "Dhuhr",
+        "asr": "Asr",
+        "maghrib": "Maghrib",
+        "isha": "Isha"
+    },
+    "home": {
+        "nextPrayer": "Next Prayer",
+        "timeUntil": "Time until",
+        "timeRemaining": "Time Remaining",
+        "todayPrayers": "Today's Prayer Times",
+        "noLocation": "No location set",
+        "setLocation": "Set Location",
+        "detectLocation": "Auto-detect Location",
+        "detecting": "Detecting...",
+        "hijriDate": "Hijri Date",
+        "hours": "Hours",
+        "minutes": "Minutes",
+        "seconds": "Seconds",
+        "qibla": "Qibla",
+        "settings": "Settings",
+        "currentTime": "Current Time"
+    },
+    "settings": {
+        "title": "Settings",
+        "location": "Location",
+        "city": "City",
+        "country": "Country",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "calculationMethod": "Calculation Method",
+        "madhab": "Madhab",
+        "language": "Language",
+        "theme": "Theme",
+        "dark": "Dark",
+        "light": "Light",
+        "timeFormat": "Time Format",
+        "audio": "Azan Audio",
+        "audioEnabled": "Enable Azan Audio",
+        "notifications": "Notifications",
+        "notificationsEnabled": "Enable Notifications",
+        "autoStart": "Start on Boot",
+        "highLatitudeRule": "High Latitude Rule",
+        "offsets": "Prayer Time Adjustments",
+        "minutes": "min",
+        "save": "Save",
+        "back": "Back"
+    },
+    "methods": {
+        "MuslimWorldLeague": "Muslim World League",
+        "ISNA": "ISNA (North America)",
+        "Egyptian": "Egyptian General Authority",
+        "UmmAlQura": "Umm al-Qura (Makkah)",
+        "Karachi": "University of Karachi",
+        "Tehran": "Tehran",
+        "Dubai": "Dubai",
+        "Kuwait": "Kuwait",
+        "Qatar": "Qatar",
+        "Singapore": "Singapore",
+        "MoonsightingCommittee": "Moonsighting Committee"
+    },
+    "madhabs": {
+        "Shafi": "Shafi'i / Standard",
+        "Hanafi": "Hanafi"
+    },
+    "highLatRules": {
+        "MiddleOfTheNight": "Middle of the Night",
+        "SeventhOfTheNight": "Seventh of the Night",
+        "TwilightAngle": "Twilight Angle"
+    }
+}
