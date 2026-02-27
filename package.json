@@ -1,10 +1,10 @@
 {
-  "name": "azan-prayer",
+  "name": "letspray",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Azan Prayer - Islamic Prayer Times Desktop App",
-  "author": "Azan Prayer",
+  "description": "Let's Pray - Islamic Prayer Times Desktop App",
+  "author": "Jalal Nasser <jalal@mdeploy.dev>",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "concurrently \"npm:dev:vite\" \"npm:dev:electron\"",
