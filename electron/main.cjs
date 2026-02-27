@@ -51,24 +51,31 @@ function createSplash() {
         webPreferences: { nodeIntegration: false, contextIsolation: true },
     });
 
-    // Read SVG and convert to base64 data URI for embedding
     const fs = require('fs');
-    const svgPath = path.join(__dirname, '..', 'public', 'hilal-logo.svg');
+    // Try multiple possible paths for the logo (dev & production)
+    const possibleLogoSources = [
+        path.join(__dirname, '..', 'public', 'hilal-logo.svg'),    // dev
+        path.join(process.resourcesPath || '', 'app', 'public', 'hilal-logo.svg'), // packaged
+        path.join(__dirname, '..', 'dist', 'hilal-logo.svg'),      // built dist
+        path.join(__dirname, '..', 'public', 'icon-256.png'),      // fallback png dev
+        path.join(process.resourcesPath || '', 'app', 'public', 'icon-256.png'), // packaged png
+    ];
+
     let logoDataUri = '';
-    try {
-        const svgContent = fs.readFileSync(svgPath);
-        logoDataUri = 'data:image/svg+xml;base64,' + svgContent.toString('base64');
-    } catch (e) {
-        // fallback: use PNG
+    for (const src of possibleLogoSources) {
         try {
-            const pngContent = fs.readFileSync(iconPath);
-            logoDataUri = 'data:image/png;base64,' + pngContent.toString('base64');
+            const content = fs.readFileSync(src);
+            const isSvg = src.endsWith('.svg');
+            logoDataUri = `data:image/${isSvg ? 'svg+xml' : 'png'};base64,` + content.toString('base64');
+            break;
         } catch { }
     }
 
     const splashHTML = `
     <html>
     <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Aref+Ruqaa:wght@700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body {
@@ -96,9 +103,9 @@ function createSplash() {
         0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(16,185,129,0.3)); }
         50% { transform: scale(1.05); filter: drop-shadow(0 0 25px rgba(16,185,129,0.5)) drop-shadow(0 0 50px rgba(16,185,129,0.2)); }
       }
-      .logo-wrap img { width: 100%; height: 100%; }
-      .title { font-size: 28px; font-weight: 700; color: #34d399; margin-bottom: 6px; direction: rtl; }
-      .subtitle { font-size: 13px; color: #8899aa; margin-bottom: 24px; }
+      .logo-wrap img { width: 100%; height: 100%; object-fit: contain; }
+      .title { font-size: 28px; font-weight: 700; color: #34d399; margin-bottom: 6px; direction: rtl; font-family: 'Aref Ruqaa', 'Amiri', serif; }
+      .subtitle { font-size: 14px; color: #8899aa; margin-bottom: 24px; font-family: 'Cinzel Decorative', serif; letter-spacing: 1px; }
       .loader { width: 140px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin: 0 auto; overflow: hidden; }
       .loader-bar { width: 40%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 2px; animation: load 1.5s ease-in-out infinite; }
       @keyframes load { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
@@ -107,9 +114,9 @@ function createSplash() {
     </head>
     <body>
       <div class="splash">
-        <div class="logo-wrap"><img src="${logoDataUri}" alt="Logo" /></div>
+        <div class="logo-wrap">${logoDataUri ? `<img src="${logoDataUri}" alt="Logo" />` : '<div style="font-size:50px">🌙</div>'}</div>
         <div class="title">حي على الصلاة</div>
-        <div class="subtitle" style="font-family: 'Cinzel Decorative', 'Outfit', sans-serif;">Let's Pray</div>
+        <div class="subtitle">Let's Pray</div>
         <div class="loader"><div class="loader-bar"></div></div>
         <div class="version">v1.0.0</div>
       </div>

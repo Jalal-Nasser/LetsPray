@@ -44,15 +44,26 @@
     "vite": "^7.3.1"
   },
   "build": {
-    "appId": "com.azanprayer.app",
-    "productName": "Azan Prayer",
+    "appId": "com.letspray.app",
+    "productName": "Let's Pray",
+    "icon": "public/icon-256.png",
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "dist/",
       "electron/",
+      "public/",
       "package.json"
     ],
     "win": {
+      "icon": "public/icon-256.png",
       "target": "nsis"
+    },
+    "nsis": {
+      "installerIcon": "public/favicon.ico",
+      "uninstallerIcon": "public/favicon.ico",
+      "installerHeaderIcon": "public/favicon.ico"
     }
   }
 }
