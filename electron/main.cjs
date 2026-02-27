@@ -109,7 +109,7 @@ function createSplash() {
       <div class="splash">
         <div class="logo-wrap"><img src="${logoDataUri}" alt="Logo" /></div>
         <div class="title">حي على الصلاة</div>
-        <div class="subtitle">Live to Pray</div>
+        <div class="subtitle" style="font-family: 'Cinzel Decorative', 'Outfit', sans-serif;">Let's Pray</div>
         <div class="loader"><div class="loader-bar"></div></div>
         <div class="version">v1.0.0</div>
       </div>
@@ -170,7 +170,7 @@ function createWindow() {
 function createTray() {
     const icon = nativeImage.createFromPath(trayIconPath);
     tray = new Tray(icon.resize({ width: 16, height: 16 }));
-    tray.setToolTip('حي على الصلاة - Live to Pray');
+    tray.setToolTip("حي على الصلاة - Let's Pray");
 
     const updateTrayMenu = () => {
         const contextMenu = Menu.buildFromTemplate([

@@ -295,7 +295,7 @@ body {
 .app-title {
   font-size: 32px;
   font-weight: 700;
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: 'Cinzel Decorative', 'Outfit', system-ui, sans-serif;
   letter-spacing: -0.5px;
   background: linear-gradient(135deg, var(--accent-light), var(--accent));
   -webkit-background-clip: text;

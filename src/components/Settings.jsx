@@ -64,8 +64,6 @@ export default function Settings({ settings, onUpdate, onBack }) {
     const [playingId, setPlayingId] = useState(null);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [showAbout, setShowAbout] = useState(false);
-    const [feedback, setFeedback] = useState('');
-    const [feedbackSent, setFeedbackSent] = useState(false);
     const audioRef = useRef(null);
     const isArabic = i18n.language === 'ar';
 
@@ -113,17 +111,6 @@ export default function Settings({ settings, onUpdate, onBack }) {
     const openLink = (url) => {
         if (window.electronAPI?.openExternal) window.electronAPI.openExternal(url);
         else window.open(url, '_blank');
-    };
-
-    const handleSendFeedback = () => {
-        if (!feedback.trim()) return;
-        // Open email with feedback
-        const subject = encodeURIComponent('حي على الصلاة - Feedback');
-        const body = encodeURIComponent(feedback);
-        openLink(`mailto:feedback@mdeploy.dev?subject=${subject}&body=${body}`);
-        setFeedbackSent(true);
-        setTimeout(() => setFeedbackSent(false), 3000);
-        setFeedback('');
     };
 
     const currentCityIdx = CITIES.findIndex(c => Math.abs(c.lat - (settings.location?.lat || 0)) < 0.01 && Math.abs(c.lon - (settings.location?.lon || 0)) < 0.01);
@@ -282,15 +269,11 @@ export default function Settings({ settings, onUpdate, onBack }) {
             {/* ── Feedback ── */}
             <div className="settings-group" style={{ marginTop: '20px' }}>
                 <div className="settings-group-label">{isArabic ? '💬 ملاحظات واقتراحات' : '💬 Feedback'}</div>
-                <textarea
-                    className="feedback-input"
-                    placeholder={isArabic ? 'اكتب ملاحظاتك أو اقتراحاتك هنا...' : 'Write your feedback or suggestions here...'}
-                    value={feedback}
-                    onChange={(e) => setFeedback(e.target.value)}
-                    rows={3}
-                />
-                <button className="detect-btn" onClick={handleSendFeedback} style={{ marginTop: '8px' }}>
-                    {feedbackSent ? (isArabic ? '✅ تم الإرسال!' : '✅ Sent!') : (isArabic ? '📧 إرسال الملاحظات' : '📧 Send Feedback')}
+                <button className="detect-btn" onClick={() => openLink('https://github.com/Jalal-Nasser/LetsPray/issues')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px' }}>
+                    <svg height="20" viewBox="0 0 16 16" version="1.1" width="20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                    </svg>
+                    {isArabic ? 'إرسال الملاحظات (GitHub)' : 'Send Feedback (GitHub)'}
                 </button>
             </div>
 
@@ -300,7 +283,9 @@ export default function Settings({ settings, onUpdate, onBack }) {
                 <div className="about-card" onClick={() => setShowAbout(!showAbout)}>
                     <img src="/hilal-logo.svg" alt="Logo" className="about-logo" />
                     <div className="about-info">
-                        <div className="about-name">{isArabic ? 'حي على الصلاة' : 'Live to Pray'}</div>
+                        <div className="about-name" style={{ fontFamily: isArabic ? '' : "'Cinzel Decorative', 'Outfit', sans-serif" }}>
+                            {isArabic ? 'حي على الصلاة' : "Let's Pray"}
+                        </div>
                         <div className="about-version">v1.0.0</div>
                     </div>
                     <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{showAbout ? '▲' : '▼'}</span>
@@ -311,7 +296,7 @@ export default function Settings({ settings, onUpdate, onBack }) {
                         <p>{isArabic ? 'مبني بـ Electron + React + Vite' : 'Built with Electron + React + Vite'}</p>
                         <p>{isArabic ? 'محرك حساب الصلاة: adhan.js' : 'Prayer engine: adhan.js'}</p>
                         <div className="about-links">
-                            <button className="about-link" onClick={() => openLink('https://github.com/Jalal-Nasser')}>
+                            <button className="about-link" onClick={() => openLink('https://github.com/Jalal-Nasser/LetsPray.git')}>
                                 GitHub
                             </button>
                             <button className="about-link" onClick={() => openLink('https://mdeploy.dev')}>

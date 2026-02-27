@@ -1,16 +1,65 @@
-# React + Vite
+# Let'sPray (حي على الصلاة)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Let'sPray Screenshot](docs/screenshots/media__1772179752596.png)
+![Let'sPray Settings Screenshot](docs/screenshots/media__1772179771808.png)
 
-Currently, two official plugins are available:
+A beautifully crafted Desktop Prayer Times & Azan Application built with modern web technologies. **Let'sPray** automatically detects your location, provides precise prayer time calculations using `adhan.js`, and plays customized authentic Azan sounds directly from your desktop.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## React Compiler
+- **Automatic Location Detection**: Accurately fetches your city and coordinates, with manual override and specific Saudi Arabia city coverage (including Al Khobar, Dammam, Dhahran).
+- **Offline Azan Audio**: Includes high-quality built-in MP3 files of famous Muezzins (Mishary Alafasy, Abdul Basit, Al-Sudais, etc.). 
+- **System Integrations**: 
+  - Minimize to System Tray (with high-res Hilal logo).
+  - Native desktop notifications for prayer times.
+  - Startup launch support.
+- **Beautiful UI**: Glassmorphic, dark-mode focused, elegant Arabic Calligraphy (`Aref Ruqaa`, `Amiri`) and English typography (`Cinzel Decorative`, `Outfit`), fully responsive with animations.
+- **Full Localization**: Seamless RTL (Right-to-Left) Arabic support and LTR English support. 
+- **Advanced Calculation Methods**: Customize your calculation method (Umm al-Qura, ISNA, MWL, etc.), Madhab, and high-latitude rules. Includes per-prayer manual offset adjustments (+/- minutes).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🚀 Tech Stack
 
-## Expanding the ESLint configuration
+- **Electron**: Cross-platform native desktop integration.
+- **React 18 + Vite**: Lightning-fast, component-based UI rendering.
+- **Adhan.js**: Accurate astronomical prayer time calculations.
+- **Tailwind CSS**: Rapid and robust styling.
+- **i18next**: Robust internationalization framework.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠 Installation & Development
+
+### Options 1: Download Release
+Head over to the [Releases](https://github.com/Jalal-Nasser/LetsPray/releases) page to download the latest `.exe` installer.
+
+### Option 2: Build From Source
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Jalal-Nasser/LetsPray.git
+   cd Azan
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+4. **Package for distribution (Windows):**
+   ```bash
+   npm run build
+   npm run package
+   ```
+
+## 📬 Feedback & Contributions
+
+- Issues & Feature Requests: Please use the [GitHub Issues](https://github.com/Jalal-Nasser/LetsPray/issues) tab.
+- Pull requests are welcome!
+
+## 📜 License
+
+© 2026 mDeploy. All rights reserved. 
+Developed by Jalal Nasser.
