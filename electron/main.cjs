@@ -185,7 +185,9 @@ function createSplash() {
   const splashHTML = `<!DOCTYPE html>
     <html>
     <head>
+    <meta charset="utf-8" />
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Amiri:wght@400;700&display=swap');
       * { margin:0; padding:0; box-sizing:border-box; }
       body {
         background: transparent;
