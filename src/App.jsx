@@ -96,12 +96,17 @@ function App() {
           };
         }
 
-        // Auto-detect location on first launch
-        if (!all.location || !all.location.lat) {
+        // Auto-detect location on every launch to keep it accurate
+        try {
           const detected = await autoDetectLocation();
-          all.location = detected;
-          if (window.electronAPI) window.electronAPI.setStoreValue('location', detected);
-        }
+          if (detected && detected.lat && detected.city !== 'Makkah') {
+            all.location = detected;
+            if (window.electronAPI) window.electronAPI.setStoreValue('location', detected);
+          } else if (!all.location || !all.location.lat) {
+            all.location = detected;
+            if (window.electronAPI) window.electronAPI.setStoreValue('location', detected);
+          }
+        } catch (e) { console.warn('Auto-detect skipped:', e); }
 
         setSettings(all);
         const lang = all.language || 'ar';
