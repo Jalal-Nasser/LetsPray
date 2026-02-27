@@ -115,9 +115,45 @@ export default function Settings({ settings, onUpdate, onBack }) {
     const handleAutoDetect = async () => {
         setDetecting(true);
         try {
+            // ── Step 1: Try GPS via browser geolocation (accurate to street level) ──
+            const gpsPosition = await new Promise((resolve, reject) => {
+                if (!navigator.geolocation) { reject(new Error('no-gps')); return; }
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true, timeout: 8000, maximumAge: 0
+                });
+            }).catch(() => null);
+
+            if (gpsPosition) {
+                const { latitude: lat, longitude: lon } = gpsPosition.coords;
+                // Reverse geocode with Nominatim (OpenStreetMap) — free, no API key
+                let city = '', country = '';
+                try {
+                    const r = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=${isArabic ? 'ar' : 'en'}`,
+                        { headers: { 'User-Agent': 'LetsPrayApp/1.0' } }
+                    );
+                    if (r.ok) {
+                        const geo = await r.json();
+                        const addr = geo.address || {};
+                        city = addr.city || addr.town || addr.village || addr.county || '';
+                        country = addr.country || '';
+                    }
+                } catch { }
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                onUpdate('location', { city: city || `${lat.toFixed(4)}, ${lon.toFixed(4)}`, country, lat, lon, timezone: tz });
+                setDetecting(false);
+                return;
+            }
+
+            // ── Step 2: Fallback to IP geolocation (less accurate — ISP city level) ──
             let data = null;
             try { const r = await fetch('https://ipapi.co/json/'); if (r.ok) data = await r.json(); } catch { }
-            if (!data?.latitude) { try { const r = await fetch('https://ipwho.is/'); if (r.ok) { const d = await r.json(); data = { city: d.city, country_name: d.country, latitude: d.latitude, longitude: d.longitude, timezone: d.timezone?.id }; } } catch { } }
+            if (!data?.latitude) {
+                try {
+                    const r = await fetch('https://ipwho.is/');
+                    if (r.ok) { const d = await r.json(); data = { city: d.city, country_name: d.country, latitude: d.latitude, longitude: d.longitude, timezone: d.timezone?.id }; }
+                } catch { }
+            }
             if (data?.latitude) {
                 onUpdate('location', { city: data.city || 'Unknown', country: data.country_name || data.country || '', lat: data.latitude, lon: data.longitude, timezone: data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone });
             }
