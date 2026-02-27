@@ -2,17 +2,48 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Resolve correct base URL for local audio assets.
-// In Electron production: app loads from file:///.../dist/index.html
-//   -> audio is at file:///.../dist/audio/filename.mp3 (relative: ./audio/)
-// In Vite dev server: audio served at /audio/filename.mp3
+// In Electron production: app loads from file:///.../dist/index.html -> audio at ./audio/
+// In Vite dev server (Electron dev or browser): audio served at /audio/
 const AUDIO_BASE = (() => {
-    const loc = window.location.href;
-    if (loc.startsWith('file://')) {
-        // Go up from dist/index.html to get the dist directory
-        return loc.replace(/\/[^/]+$/, '') + '/audio/';
-    }
+    try {
+        const loc = window.location.href;
+        if (loc.startsWith('file://')) {
+            // file:///C:/path/to/dist/index.html -> file:///C:/path/to/dist/audio/
+            return loc.replace(/\/[^/]+$/, '') + '/audio/';
+        }
+    } catch { }
     return '/audio/';
 })();
+
+// Validate that an audio URL is reachable before attempting play.
+// Returns a Promise<boolean>. Logs clear errors on failure.
+async function validateAudioAsset(url) {
+    if (!url || typeof url !== 'string') {
+        console.error('[Adhan] Audio URL is empty or invalid:', url);
+        return false;
+    }
+    const allowedExts = ['.mp3', '.wav', '.m4a', '.ogg'];
+    if (!allowedExts.some(ext => url.toLowerCase().endsWith(ext))) {
+        console.error('[Adhan] Audio URL has unsupported extension:', url);
+        return false;
+    }
+    // For local file:// URLs, do a lightweight fetch to confirm reachability
+    if (url.startsWith('file://') || url.startsWith('/') || url.startsWith('http')) {
+        try {
+            const r = await fetch(url, { method: 'HEAD', cache: 'force-cache' });
+            const size = parseInt(r.headers.get('content-length') || '1', 10);
+            if (!r.ok || size === 0) {
+                console.error('[Adhan] Audio asset unreachable or empty:', url, 'status:', r.status, 'size:', size);
+                return false;
+            }
+            return true;
+        } catch (err) {
+            console.error('[Adhan] Audio asset fetch failed:', url, err.message);
+            return false;
+        }
+    }
+    return true;
+}
 
 const METHODS = [
     'MuslimWorldLeague', 'ISNA', 'Egyptian', 'UmmAlQura', 'Karachi',
@@ -54,27 +85,26 @@ const CITIES = [
     { city: 'لوس أنجلوس', cityEn: 'Los Angeles', country: 'أمريكا', countryEn: 'USA', lat: 34.0522, lon: -118.2437, tz: 'America/Los_Angeles' },
 ];
 
-// Muezzin list — all audioFiles are LOCAL Adhan (azan) clips bundled with the app
-// IDs map to the 'muezzin' setting key. Do NOT change IDs without migrating stored settings.
+// sourceType: 'adhan' — all items MUST be Adhan recordings, not Quran recitation.
+// audioFile: filename only (no path). Full URL = AUDIO_BASE + audioFile at runtime.
+// To add makkah/madinah: place a real Adhan mp3 in public/audio/ with the matching filename.
 const MUEZZINS = [
-    { id: 'makkah', nameAr: 'أذان المسجد الحرام', nameEn: 'Masjid Al-Haram (Makkah)', originAr: 'مكة المكرمة', originEn: 'Makkah, Saudi Arabia', icon: '🕋', audioFile: '/audio/makkah.mp3' },
-    { id: 'madinah', nameAr: 'أذان المسجد النبوي', nameEn: 'Masjid An-Nabawi (Madinah)', originAr: 'المدينة المنورة', originEn: 'Madinah, Saudi Arabia', icon: '🕌', audioFile: '/audio/madinah.mp3' },
-    { id: 'mishary', nameAr: 'مشاري العفاسي', nameEn: 'Mishary Alafasy', originAr: 'الكويت', originEn: 'Kuwait', icon: '🎙', audioFile: '/audio/mishary.mp3' },
-    { id: 'sudais', nameAr: 'عبد الرحمن السديس', nameEn: 'Abdurrahman As-Sudais', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🌙', audioFile: '/audio/sudais.mp3' },
-    { id: 'shuraim', nameAr: 'سعود الشريم', nameEn: 'Saud Ash-Shuraim', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🌅', audioFile: '/audio/shuraim.mp3' },
-    { id: 'abdulbasit', nameAr: 'عبد الباسط عبد الصمد', nameEn: 'Abdul Basit Abdus-Samad', originAr: 'مصر', originEn: 'Egypt', icon: '🎵', audioFile: '/audio/abdulbasit.mp3' },
-    { id: 'husary', nameAr: 'محمود خليل الحصري', nameEn: 'Mahmoud Al-Husary', originAr: 'مصر', originEn: 'Egypt', icon: '📿', audioFile: '/audio/husary.mp3' },
-    { id: 'minshawi', nameAr: 'محمد صديق المنشاوي', nameEn: 'Muhammad Al-Minshawi', originAr: 'مصر', originEn: 'Egypt', icon: '⭐', audioFile: '/audio/minshawi.mp3' },
-];
+    { id: 'mishary', sourceType: 'adhan', nameAr: 'مشاري العفاسي', nameEn: 'Mishary Alafasy', originAr: 'الكويت', originEn: 'Kuwait', icon: '🎙', audioFile: 'mishary.mp3' },
+    { id: 'sudais', sourceType: 'adhan', nameAr: 'عبد الرحمن السديس', nameEn: 'Abdurrahman As-Sudais', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🌙', audioFile: 'sudais.mp3' },
+    { id: 'shuraim', sourceType: 'adhan', nameAr: 'سعود الشريم', nameEn: 'Saud Ash-Shuraim', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🌅', audioFile: 'shuraim.mp3' },
+    { id: 'abdulbasit', sourceType: 'adhan', nameAr: 'عبد الباسط عبد الصمد', nameEn: 'Abdul Basit Abdus-Samad', originAr: 'مصر', originEn: 'Egypt', icon: '🎵', audioFile: 'abdulbasit.mp3' },
+    { id: 'husary', sourceType: 'adhan', nameAr: 'محمود خليل الحصري', nameEn: 'Mahmoud Al-Husary', originAr: 'مصر', originEn: 'Egypt', icon: '📿', audioFile: 'husary.mp3' },
+    { id: 'minshawi', sourceType: 'adhan', nameAr: 'محمد صديق المنشاوي', nameEn: 'Muhammad Al-Minshawi', originAr: 'مصر', originEn: 'Egypt', icon: '⭐', audioFile: 'minshawi.mp3' },
+].filter(m => m.sourceType === 'adhan'); // Safety: never render non-Adhan items
 
 const DEFAULT_SETTINGS = {
     location: null, calculationMethod: 'UmmAlQura', madhab: 'Shafi', language: 'ar',
     theme: 'dark', timeFormat: '12h', audioEnabled: true, notificationsEnabled: true,
     autoStart: false, highLatitudeRule: 'MiddleOfTheNight',
     offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
-    // 'muezzin' key is the default Adhan voice for all prayers.
-    // Valid IDs: makkah | madinah | mishary | sudais | shuraim | abdulbasit | husary | minshawi
-    muezzin: 'makkah',
+    // 'muezzin' key = default Adhan voice. Valid IDs: mishary | sudais | shuraim | abdulbasit | husary | minshawi
+    // (makkah/madinah reserved - add real Adhan mp3 to public/audio/ to re-enable)
+    muezzin: 'mishary',
 };
 
 export default function Settings({ settings, onUpdate, onBack }) {
@@ -109,7 +139,7 @@ export default function Settings({ settings, onUpdate, onBack }) {
         setDetecting(false);
     };
 
-    const handlePlayMuezzin = (m) => {
+    const handlePlayMuezzin = async (m) => {
         // Stop any currently playing Adhan preview
         if (audioRef.current) {
             audioRef.current.pause();
@@ -119,18 +149,31 @@ export default function Settings({ settings, onUpdate, onBack }) {
         // Toggle off if same muezzin clicked again
         if (playingId === m.id) { setPlayingId(null); return; }
 
-        // Play the Adhan preview clip for this muezzin
-        const audio = new Audio(AUDIO_BASE + m.audioFile);
+        const resolvedUrl = AUDIO_BASE + m.audioFile;
+        console.log('[Adhan] Preview URL:', resolvedUrl, '| muezzin:', m.id);
+
+        // Validate asset before attempting playback
+        const isValid = await validateAudioAsset(resolvedUrl);
+        if (!isValid) {
+            console.error('[Adhan] Cannot play: asset failed validation for', m.id);
+            return; // Do NOT change UI, do NOT show error in UI - just silently skip
+        }
+
+        const audio = new Audio(resolvedUrl);
         audio.preload = 'auto';
         audioRef.current = audio;
         setPlayingId(m.id);
         audio.play().catch((err) => {
-            console.warn('Adhan preview failed for', m.id, err);
+            console.error('[Adhan] play() failed for', m.id, err.message);
             setPlayingId(null);
             audioRef.current = null;
         });
         audio.onended = () => { setPlayingId(null); audioRef.current = null; };
-        audio.onerror = () => { setPlayingId(null); audioRef.current = null; };
+        audio.onerror = (e) => {
+            console.error('[Adhan] Audio element error for', m.id, e);
+            setPlayingId(null);
+            audioRef.current = null;
+        };
     };
 
     const handleResetSettings = () => {
