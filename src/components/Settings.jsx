@@ -1,6 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+// Resolve correct base URL for local audio assets.
+// In Electron production: app loads from file:///.../dist/index.html
+//   -> audio is at file:///.../dist/audio/filename.mp3 (relative: ./audio/)
+// In Vite dev server: audio served at /audio/filename.mp3
+const AUDIO_BASE = (() => {
+    const loc = window.location.href;
+    if (loc.startsWith('file://')) {
+        // Go up from dist/index.html to get the dist directory
+        return loc.replace(/\/[^/]+$/, '') + '/audio/';
+    }
+    return '/audio/';
+})();
+
 const METHODS = [
     'MuslimWorldLeague', 'ISNA', 'Egyptian', 'UmmAlQura', 'Karachi',
     'Tehran', 'Dubai', 'Kuwait', 'Qatar', 'Singapore', 'MoonsightingCommittee',
@@ -41,21 +54,27 @@ const CITIES = [
     { city: 'لوس أنجلوس', cityEn: 'Los Angeles', country: 'أمريكا', countryEn: 'USA', lat: 34.0522, lon: -118.2437, tz: 'America/Los_Angeles' },
 ];
 
-// Muezzin list with LOCAL bundled audio files
+// Muezzin list — all audioFiles are LOCAL Adhan (azan) clips bundled with the app
+// IDs map to the 'muezzin' setting key. Do NOT change IDs without migrating stored settings.
 const MUEZZINS = [
+    { id: 'makkah', nameAr: 'أذان المسجد الحرام', nameEn: 'Masjid Al-Haram (Makkah)', originAr: 'مكة المكرمة', originEn: 'Makkah, Saudi Arabia', icon: '🕋', audioFile: '/audio/makkah.mp3' },
+    { id: 'madinah', nameAr: 'أذان المسجد النبوي', nameEn: 'Masjid An-Nabawi (Madinah)', originAr: 'المدينة المنورة', originEn: 'Madinah, Saudi Arabia', icon: '🕌', audioFile: '/audio/madinah.mp3' },
     { id: 'mishary', nameAr: 'مشاري العفاسي', nameEn: 'Mishary Alafasy', originAr: 'الكويت', originEn: 'Kuwait', icon: '🎙', audioFile: '/audio/mishary.mp3' },
-    { id: 'abdulbasit', nameAr: 'عبد الباسط عبد الصمد', nameEn: 'Abdul Basit', originAr: 'مصر', originEn: 'Egypt', icon: '📿', audioFile: '/audio/abdulbasit.mp3' },
-    { id: 'sudais', nameAr: 'عبد الرحمن السديس', nameEn: 'Abdurrahman As-Sudais', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🕋', audioFile: '/audio/sudais.mp3' },
-    { id: 'shuraim', nameAr: 'سعود الشريم', nameEn: 'Saud Ash-Shuraim', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🕌', audioFile: '/audio/shuraim.mp3' },
-    { id: 'husary', nameAr: 'محمود خليل الحصري', nameEn: 'Mahmoud Al-Husary', originAr: 'مصر', originEn: 'Egypt', icon: '🌙', audioFile: '/audio/husary.mp3' },
-    { id: 'minshawi', nameAr: 'محمد صديق المنشاوي', nameEn: 'Muhammad Al-Minshawi', originAr: 'مصر', originEn: 'Egypt', icon: '🌅', audioFile: '/audio/minshawi.mp3' },
+    { id: 'sudais', nameAr: 'عبد الرحمن السديس', nameEn: 'Abdurrahman As-Sudais', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🌙', audioFile: '/audio/sudais.mp3' },
+    { id: 'shuraim', nameAr: 'سعود الشريم', nameEn: 'Saud Ash-Shuraim', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🌅', audioFile: '/audio/shuraim.mp3' },
+    { id: 'abdulbasit', nameAr: 'عبد الباسط عبد الصمد', nameEn: 'Abdul Basit Abdus-Samad', originAr: 'مصر', originEn: 'Egypt', icon: '🎵', audioFile: '/audio/abdulbasit.mp3' },
+    { id: 'husary', nameAr: 'محمود خليل الحصري', nameEn: 'Mahmoud Al-Husary', originAr: 'مصر', originEn: 'Egypt', icon: '📿', audioFile: '/audio/husary.mp3' },
+    { id: 'minshawi', nameAr: 'محمد صديق المنشاوي', nameEn: 'Muhammad Al-Minshawi', originAr: 'مصر', originEn: 'Egypt', icon: '⭐', audioFile: '/audio/minshawi.mp3' },
 ];
 
 const DEFAULT_SETTINGS = {
     location: null, calculationMethod: 'UmmAlQura', madhab: 'Shafi', language: 'ar',
     theme: 'dark', timeFormat: '12h', audioEnabled: true, notificationsEnabled: true,
     autoStart: false, highLatitudeRule: 'MiddleOfTheNight',
-    offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 }, muezzin: 'mishary',
+    offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
+    // 'muezzin' key is the default Adhan voice for all prayers.
+    // Valid IDs: makkah | madinah | mishary | sudais | shuraim | abdulbasit | husary | minshawi
+    muezzin: 'makkah',
 };
 
 export default function Settings({ settings, onUpdate, onBack }) {
@@ -91,13 +110,25 @@ export default function Settings({ settings, onUpdate, onBack }) {
     };
 
     const handlePlayMuezzin = (m) => {
-        if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+        // Stop any currently playing Adhan preview
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.src = '';
+            audioRef.current = null;
+        }
+        // Toggle off if same muezzin clicked again
         if (playingId === m.id) { setPlayingId(null); return; }
 
-        const audio = new Audio(m.audioFile);
+        // Play the Adhan preview clip for this muezzin
+        const audio = new Audio(AUDIO_BASE + m.audioFile);
+        audio.preload = 'auto';
         audioRef.current = audio;
         setPlayingId(m.id);
-        audio.play().catch(() => setPlayingId(null));
+        audio.play().catch((err) => {
+            console.warn('Adhan preview failed for', m.id, err);
+            setPlayingId(null);
+            audioRef.current = null;
+        });
         audio.onended = () => { setPlayingId(null); audioRef.current = null; };
         audio.onerror = () => { setPlayingId(null); audioRef.current = null; };
     };
@@ -228,9 +259,9 @@ export default function Settings({ settings, onUpdate, onBack }) {
                 </div>
             </div>
 
-            {/* ── Muezzin / Reciter Selection ── */}
+            {/* ── Adhan Muezzin Selection (Audio Library) ── */}
             <div className="settings-group" style={{ marginTop: '20px' }}>
-                <div className="settings-group-label">{isArabic ? 'صوت المؤذن / القارئ' : 'Muezzin / Reciter Voice'}</div>
+                <div className="settings-group-label">{isArabic ? 'صوت الأذان (المؤذن)' : 'Adhan Voice (Muezzin)'}</div>
                 <div className="muezzin-grid">
                     {MUEZZINS.map(m => (
                         <div key={m.id} className={`muezzin-card ${settings.muezzin === m.id ? 'selected' : ''}`} onClick={() => onUpdate('muezzin', m.id)}>
