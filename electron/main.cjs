@@ -105,7 +105,7 @@ function createSplash() {
         <div class="title">حي على الصلاة</div>
         <div class="subtitle">Let's Pray</div>
         <div class="loader"><div class="loader-bar"></div></div>
-        <div class="version">v1.0.0</div>
+        <div class="version">v1.0.1</div>
       </div>
     </body>
     </html>`;
