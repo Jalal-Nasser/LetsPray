@@ -51,33 +51,11 @@ function createSplash() {
         webPreferences: { nodeIntegration: false, contextIsolation: true },
     });
 
-    const fs = require('fs');
-    // Try multiple possible paths for the logo (dev & production)
-    const possibleLogoSources = [
-        path.join(__dirname, '..', 'public', 'hilal-logo.svg'),    // dev
-        path.join(process.resourcesPath || '', 'app', 'public', 'hilal-logo.svg'), // packaged
-        path.join(__dirname, '..', 'dist', 'hilal-logo.svg'),      // built dist
-        path.join(__dirname, '..', 'public', 'icon-256.png'),      // fallback png dev
-        path.join(process.resourcesPath || '', 'app', 'public', 'icon-256.png'), // packaged png
-    ];
-
-    let logoDataUri = '';
-    for (const src of possibleLogoSources) {
-        try {
-            const content = fs.readFileSync(src);
-            const isSvg = src.endsWith('.svg');
-            logoDataUri = `data:image/${isSvg ? 'svg+xml' : 'png'};base64,` + content.toString('base64');
-            break;
-        } catch { }
-    }
-
-    const splashHTML = `
+    const splashHTML = `<!DOCTYPE html>
     <html>
     <head>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Aref+Ruqaa:wght@700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+      * { margin:0; padding:0; box-sizing:border-box; }
       body {
         background: transparent;
         display: flex; align-items: center; justify-content: center;
@@ -91,30 +69,39 @@ function createSplash() {
         padding: 50px 40px;
         text-align: center;
         box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        border: 1px solid rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16,185,129,0.15);
         animation: fadeIn 0.6s ease-out;
+        min-width: 300px;
       }
-      @keyframes fadeIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
-      .logo-wrap {
-        width: 80px; height: 80px; margin: 0 auto 20px;
-        animation: moonPulse 2s ease-in-out infinite;
-      }
+      @keyframes fadeIn { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+      .logo-wrap { width:80px; height:80px; margin:0 auto 20px; animation:moonPulse 2s ease-in-out infinite; }
       @keyframes moonPulse {
-        0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(16,185,129,0.3)); }
-        50% { transform: scale(1.05); filter: drop-shadow(0 0 25px rgba(16,185,129,0.5)) drop-shadow(0 0 50px rgba(16,185,129,0.2)); }
+        0%,100% { transform:scale(1); filter:drop-shadow(0 0 10px rgba(16,185,129,0.3)); }
+        50% { transform:scale(1.05); filter:drop-shadow(0 0 25px rgba(16,185,129,0.5)); }
       }
-      .logo-wrap img { width: 100%; height: 100%; object-fit: contain; }
-      .title { font-size: 28px; font-weight: 700; color: #34d399; margin-bottom: 6px; direction: rtl; font-family: 'Aref Ruqaa', 'Amiri', serif; }
-      .subtitle { font-size: 14px; color: #8899aa; margin-bottom: 24px; font-family: 'Cinzel Decorative', serif; letter-spacing: 1px; }
-      .loader { width: 140px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin: 0 auto; overflow: hidden; }
-      .loader-bar { width: 40%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 2px; animation: load 1.5s ease-in-out infinite; }
-      @keyframes load { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
-      .version { font-size: 10px; color: #556677; margin-top: 14px; }
+      .title { font-size:28px; font-weight:700; color:#34d399; margin-bottom:6px; direction:rtl; }
+      .subtitle { font-size:14px; color:#8899aa; margin-bottom:24px; letter-spacing:1px; }
+      .loader { width:140px; height:3px; background:rgba(255,255,255,0.08); border-radius:2px; margin:0 auto; overflow:hidden; }
+      .loader-bar { width:40%; height:100%; background:linear-gradient(90deg,#10b981,#34d399); border-radius:2px; animation:load 1.5s ease-in-out infinite; }
+      @keyframes load { 0% { transform:translateX(-100%); } 100% { transform:translateX(350%); } }
+      .version { font-size:10px; color:#556677; margin-top:14px; }
     </style>
     </head>
     <body>
       <div class="splash">
-        <div class="logo-wrap">${logoDataUri ? `<img src="${logoDataUri}" alt="Logo" />` : '<div style="font-size:50px">🌙</div>'}</div>
+        <div class="logo-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none" style="width:100%;height:100%">
+            <defs>
+              <linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#34d399"/>
+                <stop offset="100%" stop-color="#059669"/>
+              </linearGradient>
+              <filter id="sg"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <path d="M 44 8 C 28 8,14 22,14 38 C 14 54,28 68,44 68 C 33 61,26 50,26 38 C 26 26,33 15,44 8 Z" fill="url(#hg)" filter="url(#sg)"/>
+            <path d="M 52 24 L 53.8 29 L 59 29.5 L 55 32.5 L 56.2 37.5 L 52 34.8 L 47.8 37.5 L 49 32.5 L 45 29.5 L 50.2 29 Z" fill="url(#hg)"/>
+          </svg>
+        </div>
         <div class="title">حي على الصلاة</div>
         <div class="subtitle">Let's Pray</div>
         <div class="loader"><div class="loader-bar"></div></div>
