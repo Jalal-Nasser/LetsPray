@@ -14,44 +14,44 @@ const trayIconPath = path.join(__dirname, '..', 'public', 'tray-icon.png');
 
 // ── Electron Store (ESM dynamic import) ──
 async function initStore() {
-    try {
-        const { default: Store } = await import('electron-store');
-        store = new Store({
-            defaults: {
-                location: null,
-                calculationMethod: 'UmmAlQura',
-                madhab: 'Shafi',
-                language: 'ar',
-                theme: 'dark',
-                timeFormat: '12h',
-                audioEnabled: true,
-                notificationsEnabled: true,
-                autoStart: false,
-                highLatitudeRule: 'MiddleOfTheNight',
-                offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
-                muezzin: 'makkah',
-            },
-        });
-    } catch (err) {
-        console.error('Failed to initialize electron-store:', err);
-    }
+  try {
+    const { default: Store } = await import('electron-store');
+    store = new Store({
+      defaults: {
+        location: null,
+        calculationMethod: 'UmmAlQura',
+        madhab: 'Shafi',
+        language: 'ar',
+        theme: 'dark',
+        timeFormat: '12h',
+        audioEnabled: true,
+        notificationsEnabled: true,
+        autoStart: false,
+        highLatitudeRule: 'MiddleOfTheNight',
+        offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
+        muezzin: 'makkah',
+      },
+    });
+  } catch (err) {
+    console.error('Failed to initialize electron-store:', err);
+  }
 }
 
 // ── Splash Screen ──
 function createSplash() {
-    splashWin = new BrowserWindow({
-        width: 400,
-        height: 320,
-        frame: false,
-        transparent: true,
-        resizable: false,
-        alwaysOnTop: true,
-        skipTaskbar: true,
-        icon: nativeImage.createFromPath(iconPath),
-        webPreferences: { nodeIntegration: false, contextIsolation: true },
-    });
+  splashWin = new BrowserWindow({
+    width: 400,
+    height: 320,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    icon: nativeImage.createFromPath(iconPath),
+    webPreferences: { nodeIntegration: false, contextIsolation: true },
+  });
 
-    const splashHTML = `<!DOCTYPE html>
+  const splashHTML = `<!DOCTYPE html>
     <html>
     <head>
     <style>
@@ -105,94 +105,94 @@ function createSplash() {
         <div class="title">حي على الصلاة</div>
         <div class="subtitle">Let's Pray</div>
         <div class="loader"><div class="loader-bar"></div></div>
-        <div class="version">v1.0.1</div>
+        <div class="version">v1.0.2</div>
       </div>
     </body>
     </html>`;
 
-    splashWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(splashHTML));
+  splashWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(splashHTML));
 }
 
 // ── Window ──
 function createWindow() {
-    win = new BrowserWindow({
-        width: 900,
-        height: 650,
-        minWidth: 700,
-        minHeight: 500,
-        frame: false,
-        transparent: false,
-        resizable: true,
-        show: false, // hidden until ready
-        icon: nativeImage.createFromPath(iconPath),
-        backgroundColor: '#0f1923',
-        webPreferences: {
-            preload: path.join(__dirname, 'preload.cjs'),
-            contextIsolation: true,
-            nodeIntegration: false,
-            sandbox: false,
-        },
-    });
+  win = new BrowserWindow({
+    width: 900,
+    height: 650,
+    minWidth: 700,
+    minHeight: 500,
+    frame: false,
+    transparent: false,
+    resizable: true,
+    show: false, // hidden until ready
+    icon: nativeImage.createFromPath(iconPath),
+    backgroundColor: '#0f1923',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  });
 
-    if (isDev) {
-        win.loadURL('http://localhost:5173');
-    } else {
-        win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+  if (isDev) {
+    win.loadURL('http://localhost:5173');
+  } else {
+    win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+  }
+
+  // Show main window after content loads, close splash
+  win.webContents.on('did-finish-load', () => {
+    setTimeout(() => {
+      if (splashWin) {
+        splashWin.close();
+        splashWin = null;
+      }
+      win.show();
+      if (isDev) win.webContents.openDevTools({ mode: 'detach' });
+    }, 1800); // show splash for at least 1.8s
+  });
+
+  win.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      win.hide();
     }
-
-    // Show main window after content loads, close splash
-    win.webContents.on('did-finish-load', () => {
-        setTimeout(() => {
-            if (splashWin) {
-                splashWin.close();
-                splashWin = null;
-            }
-            win.show();
-            if (isDev) win.webContents.openDevTools({ mode: 'detach' });
-        }, 1800); // show splash for at least 1.8s
-    });
-
-    win.on('close', (event) => {
-        if (!isQuitting) {
-            event.preventDefault();
-            win.hide();
-        }
-    });
+  });
 }
 
 // ── Tray ──
 function createTray() {
-    const icon = nativeImage.createFromPath(trayIconPath);
-    tray = new Tray(icon.resize({ width: 16, height: 16 }));
-    tray.setToolTip("حي على الصلاة - Let's Pray");
+  const icon = nativeImage.createFromPath(trayIconPath);
+  tray = new Tray(icon.resize({ width: 16, height: 16 }));
+  tray.setToolTip("حي على الصلاة - Let's Pray");
 
-    const updateTrayMenu = () => {
-        const contextMenu = Menu.buildFromTemplate([
-            { label: 'حي على الصلاة', click: () => win.show() },
-            { type: 'separator' },
-            { label: 'خروج / Quit', click: () => { isQuitting = true; app.quit(); } },
-        ]);
-        tray.setContextMenu(contextMenu);
-    };
+  const updateTrayMenu = () => {
+    const contextMenu = Menu.buildFromTemplate([
+      { label: 'حي على الصلاة', click: () => win.show() },
+      { type: 'separator' },
+      { label: 'خروج / Quit', click: () => { isQuitting = true; app.quit(); } },
+    ]);
+    tray.setContextMenu(contextMenu);
+  };
 
-    updateTrayMenu();
-    tray.on('click', () => (win.isVisible() ? win.focus() : win.show()));
+  updateTrayMenu();
+  tray.on('click', () => (win.isVisible() ? win.focus() : win.show()));
 }
 
 // ── App lifecycle ──
 app.whenReady().then(async () => {
-    createSplash();
-    await initStore();
-    createWindow();
-    createTray();
+  createSplash();
+  await initStore();
+  createWindow();
+  createTray();
 
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) createWindow();
-    });
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
 });
 
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('before-quit', () => { isQuitting = true; });
@@ -205,34 +205,34 @@ ipcMain.on('store:set', (_e, key, value) => { if (store) store.set(key, value); 
 let adhanWin = null;
 
 function createAdhanWindow(title, body) {
-    if (adhanWin) {
-        adhanWin.close();
-        adhanWin = null;
-    }
+  if (adhanWin) {
+    adhanWin.close();
+    adhanWin = null;
+  }
 
-    const { screen } = require('electron');
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const { width, height } = primaryDisplay.workAreaSize;
+  const { screen } = require('electron');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
 
-    // Window dimensions
-    const w = 340;
-    const h = 120;
+  // Window dimensions
+  const w = 340;
+  const h = 120;
 
-    adhanWin = new BrowserWindow({
-        width: w,
-        height: h,
-        x: width - w - 20, // Bottom right with 20px padding
-        y: height - h - 20,
-        frame: false,
-        transparent: true,
-        resizable: false,
-        alwaysOnTop: true,
-        skipTaskbar: true,
-        focusable: false, // Don't steal focus from user's current app
-        webPreferences: { nodeIntegration: true, contextIsolation: false }
-    });
+  adhanWin = new BrowserWindow({
+    width: w,
+    height: h,
+    x: width - w - 20, // Bottom right with 20px padding
+    y: height - h - 20,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    focusable: false, // Don't steal focus from user's current app
+    webPreferences: { nodeIntegration: true, contextIsolation: false }
+  });
 
-    const adhanHTML = `<!DOCTYPE html>
+  const adhanHTML = `<!DOCTYPE html>
     <html dir="rtl">
     <head>
     <meta charset="utf-8">
@@ -295,21 +295,21 @@ function createAdhanWindow(title, body) {
     </body>
     </html>`;
 
-    adhanWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(adhanHTML));
+  adhanWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(adhanHTML));
 
-    // Auto close after 15 seconds
-    setTimeout(() => {
-        if (adhanWin) { adhanWin.close(); adhanWin = null; }
-    }, 15000);
+  // Auto close after 15 seconds
+  setTimeout(() => {
+    if (adhanWin) { adhanWin.close(); adhanWin = null; }
+  }, 15000);
 }
 
 ipcMain.on('adhan:close', () => {
-    if (adhanWin) { adhanWin.close(); adhanWin = null; }
+  if (adhanWin) { adhanWin.close(); adhanWin = null; }
 });
 
 ipcMain.on('notification:show', (_e, title, body) => {
-    // Show custom adhan window instead of native notification
-    createAdhanWindow(title, body);
+  // Show custom adhan window instead of native notification
+  createAdhanWindow(title, body);
 });
 
 // Open external links (for footer)
@@ -318,7 +318,7 @@ ipcMain.on('open-external', (_e, url) => { shell.openExternal(url); });
 // Window controls for frameless window
 ipcMain.on('window:minimize', () => win?.minimize());
 ipcMain.on('window:maximize', () => {
-    if (win?.isMaximized()) win.unmaximize();
-    else win?.maximize();
+  if (win?.isMaximized()) win.unmaximize();
+  else win?.maximize();
 });
 ipcMain.on('window:close', () => win?.close());
