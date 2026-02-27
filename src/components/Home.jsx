@@ -59,7 +59,47 @@ export default function Home({ settings, onOpenSettings, onUpdateSetting }) {
             {/* Header */}
             <header className="app-header">
                 <div className="brand-block">
-                    <img src="/hilal-logo.svg" alt="Hilal" className="brand-logo" />
+                    <svg className="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+                        <defs>
+                            <linearGradient id="hilalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#34d399" />
+                                <stop offset="50%" stopColor="#10b981" />
+                                <stop offset="100%" stopColor="#059669" />
+                            </linearGradient>
+                            <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stopColor="#34d399" stopOpacity="0.5" />
+                                <stop offset="60%" stopColor="#10b981" stopOpacity="0.15" />
+                                <stop offset="100%" stopColor="#059669" stopOpacity="0" />
+                            </radialGradient>
+                            <filter id="softGlow">
+                                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                            </filter>
+                            <filter id="starGlow">
+                                <feGaussianBlur stdDeviation="1.5" result="blur" />
+                                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                            </filter>
+                        </defs>
+                        <circle cx="38" cy="38" r="36" fill="url(#moonGlow)">
+                            <animate attributeName="opacity" values="0.4;0.8;0.4" dur="4s" repeatCount="indefinite" />
+                        </circle>
+                        <path d="M 44 8 C 28 8, 14 22, 14 38 C 14 54, 28 68, 44 68 C 33 61, 26 50, 26 38 C 26 26, 33 15, 44 8 Z"
+                            fill="url(#hilalGrad)" filter="url(#softGlow)" />
+                        <path d="M 52 24 L 53.8 29 L 59 29.5 L 55 32.5 L 56.2 37.5 L 52 34.8 L 47.8 37.5 L 49 32.5 L 45 29.5 L 50.2 29 Z"
+                            fill="url(#hilalGrad)" filter="url(#starGlow)">
+                            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" />
+                        </path>
+                        <circle cx="60" cy="16" r="1.2" fill="#34d399">
+                            <animate attributeName="r" values="0.6;1.4;0.6" dur="2.5s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="0.3;1;0.3" dur="2.5s" repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="64" cy="42" r="0.9" fill="#6ee7b7">
+                            <animate attributeName="opacity" values="0.2;0.9;0.2" dur="3.2s" repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="55" cy="52" r="0.7" fill="#34d399">
+                            <animate attributeName="opacity" values="0.4;1;0.4" dur="1.8s" repeatCount="indefinite" />
+                        </circle>
+                    </svg>
                     <div>
                         <h1 className="app-title">{t('app.title')}</h1>
                         <p className="app-subtitle">{t('app.subtitle')}</p>

@@ -281,7 +281,22 @@ export default function Settings({ settings, onUpdate, onBack }) {
             <div className="settings-group" style={{ marginTop: '20px' }}>
                 <div className="settings-group-label">{isArabic ? 'حول التطبيق' : 'About'}</div>
                 <div className="about-card" onClick={() => setShowAbout(!showAbout)}>
-                    <img src="/hilal-logo.svg" alt="Logo" className="about-logo" />
+                    <svg className="about-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+                        <defs>
+                            <linearGradient id="aboutHilalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#34d399" />
+                                <stop offset="100%" stopColor="#059669" />
+                            </linearGradient>
+                            <filter id="aboutSoftGlow">
+                                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                            </filter>
+                        </defs>
+                        <path d="M 44 8 C 28 8, 14 22, 14 38 C 14 54, 28 68, 44 68 C 33 61, 26 50, 26 38 C 26 26, 33 15, 44 8 Z"
+                            fill="url(#aboutHilalGrad)" filter="url(#aboutSoftGlow)" />
+                        <path d="M 52 24 L 53.8 29 L 59 29.5 L 55 32.5 L 56.2 37.5 L 52 34.8 L 47.8 37.5 L 49 32.5 L 45 29.5 L 50.2 29 Z"
+                            fill="url(#aboutHilalGrad)" />
+                    </svg>
                     <div className="about-info">
                         <div className="about-name" style={{ fontFamily: isArabic ? '' : "'Cinzel Decorative', 'Outfit', sans-serif" }}>
                             {isArabic ? 'حي على الصلاة' : "Let's Pray"}
