@@ -5,6 +5,7 @@ import './index.css';
 import Home from './components/Home';
 import Settings from './components/Settings';
 import TitleBar from './components/TitleBar';
+import mosqueBg from '/mosque-bg.png';
 
 // Auto-detect city/timezone using multiple fallback APIs (all HTTPS)
 async function autoDetectLocation() {
@@ -149,7 +150,7 @@ function App() {
     <>
       {/* Background image + overlay */}
       <div className="bg-layer">
-        <img src="/mosque-bg.png" alt="" />
+        <img src={mosqueBg} alt="" />
       </div>
       <div className="bg-overlay" />
 
