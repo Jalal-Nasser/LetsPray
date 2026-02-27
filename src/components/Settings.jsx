@@ -15,9 +15,10 @@ const AUDIO_BASE = (() => {
     return '/audio/';
 })();
 
-// Validate that an audio URL is reachable before attempting play.
-// Returns a Promise<boolean>. Logs clear errors on failure.
-async function validateAudioAsset(url) {
+// Light validation: just check extension is a known audio format.
+// The Audio element itself will report onerror if the file can't be played.
+// We intentionally avoid HEAD fetch — Vite dev server and Electron CSP may block it.
+function validateAudioAsset(url) {
     if (!url || typeof url !== 'string') {
         console.error('[Adhan] Audio URL is empty or invalid:', url);
         return false;
@@ -26,21 +27,6 @@ async function validateAudioAsset(url) {
     if (!allowedExts.some(ext => url.toLowerCase().endsWith(ext))) {
         console.error('[Adhan] Audio URL has unsupported extension:', url);
         return false;
-    }
-    // For local file:// URLs, do a lightweight fetch to confirm reachability
-    if (url.startsWith('file://') || url.startsWith('/') || url.startsWith('http')) {
-        try {
-            const r = await fetch(url, { method: 'HEAD', cache: 'force-cache' });
-            const size = parseInt(r.headers.get('content-length') || '1', 10);
-            if (!r.ok || size === 0) {
-                console.error('[Adhan] Audio asset unreachable or empty:', url, 'status:', r.status, 'size:', size);
-                return false;
-            }
-            return true;
-        } catch (err) {
-            console.error('[Adhan] Audio asset fetch failed:', url, err.message);
-            return false;
-        }
     }
     return true;
 }
@@ -139,7 +125,7 @@ export default function Settings({ settings, onUpdate, onBack }) {
         setDetecting(false);
     };
 
-    const handlePlayMuezzin = async (m) => {
+    const handlePlayMuezzin = (m) => {
         // Stop any currently playing Adhan preview
         if (audioRef.current) {
             audioRef.current.pause();
@@ -152,11 +138,9 @@ export default function Settings({ settings, onUpdate, onBack }) {
         const resolvedUrl = AUDIO_BASE + m.audioFile;
         console.log('[Adhan] Preview URL:', resolvedUrl, '| muezzin:', m.id);
 
-        // Validate asset before attempting playback
-        const isValid = await validateAudioAsset(resolvedUrl);
-        if (!isValid) {
-            console.error('[Adhan] Cannot play: asset failed validation for', m.id);
-            return; // Do NOT change UI, do NOT show error in UI - just silently skip
+        if (!validateAudioAsset(resolvedUrl)) {
+            console.error('[Adhan] Cannot play: invalid URL for', m.id);
+            return;
         }
 
         const audio = new Audio(resolvedUrl);
@@ -164,13 +148,15 @@ export default function Settings({ settings, onUpdate, onBack }) {
         audioRef.current = audio;
         setPlayingId(m.id);
         audio.play().catch((err) => {
-            console.error('[Adhan] play() failed for', m.id, err.message);
+            console.error('[Adhan] play() rejected for', m.id, '-', err.message);
             setPlayingId(null);
             audioRef.current = null;
         });
         audio.onended = () => { setPlayingId(null); audioRef.current = null; };
-        audio.onerror = (e) => {
-            console.error('[Adhan] Audio element error for', m.id, e);
+        audio.onerror = () => {
+            const code = audio.error?.code;
+            const msg = audio.error?.message || 'unknown';
+            console.error('[Adhan] Audio error for', m.id, '- code:', code, msg);
             setPlayingId(null);
             audioRef.current = null;
         };
