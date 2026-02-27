@@ -202,8 +202,114 @@ ipcMain.handle('store:get', (_e, key) => store ? store.get(key) : undefined);
 ipcMain.handle('store:getAll', () => store ? store.store : {});
 ipcMain.on('store:set', (_e, key, value) => { if (store) store.set(key, value); });
 
+let adhanWin = null;
+
+function createAdhanWindow(title, body) {
+    if (adhanWin) {
+        adhanWin.close();
+        adhanWin = null;
+    }
+
+    const { screen } = require('electron');
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width, height } = primaryDisplay.workAreaSize;
+
+    // Window dimensions
+    const w = 340;
+    const h = 120;
+
+    adhanWin = new BrowserWindow({
+        width: w,
+        height: h,
+        x: width - w - 20, // Bottom right with 20px padding
+        y: height - h - 20,
+        frame: false,
+        transparent: true,
+        resizable: false,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        focusable: false, // Don't steal focus from user's current app
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+    });
+
+    const adhanHTML = `<!DOCTYPE html>
+    <html dir="rtl">
+    <head>
+    <meta charset="utf-8">
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body {
+        background: transparent;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        overflow: hidden;
+        user-select: none;
+      }
+      .notification {
+        background: linear-gradient(135deg, #0f1923 0%, #162231 100%);
+        border-radius: 16px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        border: 1px solid rgba(16,185,129,0.3);
+        height: 100vh;
+        animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+      }
+      @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      .icon-box {
+        width: 48px; height: 48px;
+        background: rgba(16,185,129,0.1);
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        animation: pulse 2s infinite;
+      }
+      .icon-box svg { width: 28px; height: 28px; fill: #34d399; }
+      @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16,185,129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129, 0); } }
+      .text-content { flex-grow: 1; }
+      .title { font-size: 18px; font-weight: 700; color: #34d399; margin-bottom: 4px; }
+      .body { font-size: 14px; color: #cbd5e1; }
+      .close-btn {
+        position: absolute; top: 12px; left: 12px; /* RTL means left is trailing */
+        background: none; border: none; color: #64748b; cursor: pointer;
+        font-size: 18px; line-height: 1; width: 24px; height: 24px; border-radius: 50%;
+        transition: all 0.2s;
+        -webkit-app-region: no-drag;
+      }
+      .close-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    </style>
+    </head>
+    <body style="-webkit-app-region: drag;">
+      <div class="notification">
+        <button class="close-btn" onclick="const { ipcRenderer } = require('electron'); ipcRenderer.send('adhan:close');">&times;</button>
+        <div class="icon-box">
+          <svg viewBox="0 0 24 24"><path d="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M11,19.93C7.05,19.43 4,16.05 4,12C4,7.95 7.05,4.57 11,4.07V19.93M13,4.07C16.95,4.57 20,7.95 20,12C20,16.05 16.95,19.43 13,19.93V4.07Z"/></svg>
+        </div>
+        <div class="text-content">
+          <div class="title">${title}</div>
+          <div class="body">${body}</div>
+        </div>
+      </div>
+    </body>
+    </html>`;
+
+    adhanWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(adhanHTML));
+
+    // Auto close after 15 seconds
+    setTimeout(() => {
+        if (adhanWin) { adhanWin.close(); adhanWin = null; }
+    }, 15000);
+}
+
+ipcMain.on('adhan:close', () => {
+    if (adhanWin) { adhanWin.close(); adhanWin = null; }
+});
+
 ipcMain.on('notification:show', (_e, title, body) => {
-    new Notification({ title, body, icon: nativeImage.createFromPath(iconPath) }).show();
+    // Show custom adhan window instead of native notification
+    createAdhanWindow(title, body);
 });
 
 // Open external links (for footer)
