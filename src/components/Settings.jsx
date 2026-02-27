@@ -72,16 +72,18 @@ const CITIES = [
 ];
 
 // sourceType: 'adhan' — all items MUST be Adhan recordings, not Quran recitation.
-// audioFile: filename only (no path). Full URL = AUDIO_BASE + audioFile at runtime.
-// To add makkah/madinah: place a real Adhan mp3 in public/audio/ with the matching filename.
+// audioFile: filename only. Full URL = AUDIO_BASE + audioFile at runtime.
+// All files are real Adhan (call to prayer) recordings downloaded from archive.org.
 const MUEZZINS = [
+    { id: 'makkah', sourceType: 'adhan', nameAr: 'أذان المسجد الحرام', nameEn: 'Masjid Al-Haram (Makkah)', originAr: 'مكة المكرمة', originEn: 'Makkah, Saudi Arabia', icon: '🕋', audioFile: 'makkah.mp3' },
+    { id: 'madinah', sourceType: 'adhan', nameAr: 'أذان المسجد النبوي', nameEn: 'Masjid An-Nabawi (Madinah)', originAr: 'المدينة المنورة', originEn: 'Madinah, Saudi Arabia', icon: '🕌', audioFile: 'madinah.mp3' },
     { id: 'mishary', sourceType: 'adhan', nameAr: 'مشاري العفاسي', nameEn: 'Mishary Alafasy', originAr: 'الكويت', originEn: 'Kuwait', icon: '🎙', audioFile: 'mishary.mp3' },
     { id: 'sudais', sourceType: 'adhan', nameAr: 'عبد الرحمن السديس', nameEn: 'Abdurrahman As-Sudais', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🌙', audioFile: 'sudais.mp3' },
     { id: 'shuraim', sourceType: 'adhan', nameAr: 'سعود الشريم', nameEn: 'Saud Ash-Shuraim', originAr: 'مكة المكرمة', originEn: 'Makkah', icon: '🌅', audioFile: 'shuraim.mp3' },
     { id: 'abdulbasit', sourceType: 'adhan', nameAr: 'عبد الباسط عبد الصمد', nameEn: 'Abdul Basit Abdus-Samad', originAr: 'مصر', originEn: 'Egypt', icon: '🎵', audioFile: 'abdulbasit.mp3' },
     { id: 'husary', sourceType: 'adhan', nameAr: 'محمود خليل الحصري', nameEn: 'Mahmoud Al-Husary', originAr: 'مصر', originEn: 'Egypt', icon: '📿', audioFile: 'husary.mp3' },
     { id: 'minshawi', sourceType: 'adhan', nameAr: 'محمد صديق المنشاوي', nameEn: 'Muhammad Al-Minshawi', originAr: 'مصر', originEn: 'Egypt', icon: '⭐', audioFile: 'minshawi.mp3' },
-].filter(m => m.sourceType === 'adhan'); // Safety: never render non-Adhan items
+].filter(m => m.sourceType === 'adhan'); // Safety guard: never render non-Adhan items
 
 const DEFAULT_SETTINGS = {
     location: null, calculationMethod: 'UmmAlQura', madhab: 'Shafi', language: 'ar',
