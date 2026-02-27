@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getPrayerTimes, getNextPrayer, getCountdown, formatTime, getHijriDate } from '../engine/prayerEngine';
+import { getPrayerTimes, getCountdown, formatTime, getHijriDate } from '../engine/prayerEngine';
 import dayjs from 'dayjs';
 
 const PRAYER_KEYS = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
@@ -20,14 +20,29 @@ export default function Home({ settings, onOpenSettings, onUpdateSetting }) {
 
     const times = useMemo(() => {
         if (lat == null || lon == null) return null;
-        return getPrayerTimes(now, lat, lon, settings.calculationMethod, settings.madhab, settings.highLatitudeRule, settings.offsets);
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        return getPrayerTimes(today, lat, lon, settings.calculationMethod, settings.madhab, settings.highLatitudeRule, settings.offsets);
+    }, [lat, lon, settings.calculationMethod, settings.madhab, settings.highLatitudeRule, settings.offsets,
+        now.getFullYear(), now.getMonth(), now.getDate()]);
+
+    const tomorrowTimes = useMemo(() => {
+        if (lat == null || lon == null) return null;
+        const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        return getPrayerTimes(tomorrow, lat, lon, settings.calculationMethod, settings.madhab, settings.highLatitudeRule, settings.offsets);
     }, [lat, lon, settings.calculationMethod, settings.madhab, settings.highLatitudeRule, settings.offsets,
         now.getFullYear(), now.getMonth(), now.getDate()]);
 
     const next = useMemo(() => {
         if (!times) return null;
-        return getNextPrayer(now, times);
-    }, [now, times]);
+        const candidates = [
+            ...PRAYER_KEYS.map((name) => ({ name, time: times[name] })),
+            ...PRAYER_KEYS.map((name) => ({ name, time: tomorrowTimes?.[name] })),
+        ]
+            .filter((item) => item.time instanceof Date && !Number.isNaN(item.time.getTime()))
+            .sort((a, b) => a.time.getTime() - b.time.getTime());
+
+        return candidates.find((item) => item.time > now) || null;
+    }, [now, times, tomorrowTimes]);
 
     const countdown = useMemo(() => {
         if (!next) return { hours: 0, minutes: 0, seconds: 0 };
@@ -42,7 +57,7 @@ export default function Home({ settings, onOpenSettings, onUpdateSetting }) {
 
     const currentTimeStr = dayjs(now).format(settings.timeFormat === '24h' ? 'HH:mm:ss' : 'hh:mm:ss A');
 
-    if (!lat || !lon) {
+    if (lat == null || lon == null) {
         return (
             <div className="no-location">
                 <div className="no-location-icon">📍</div>

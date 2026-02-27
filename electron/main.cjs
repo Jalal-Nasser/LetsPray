@@ -1,5 +1,7 @@
 const { app, BrowserWindow, ipcMain, Notification, Tray, Menu, nativeImage, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const https = require('https');
 
 let store = null;
 let tray = null;
@@ -7,10 +9,126 @@ let win = null;
 let splashWin = null;
 let isQuitting = false;
 const isDev = process.env.NODE_ENV === 'development';
+let updateCheckTimer = null;
+let lastNotifiedUpdateVersion = null;
+
+const UPDATE_CHECK_URL = 'https://api.github.com/repos/Jalal-Nasser/LetsPray/releases/latest';
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // every 6 hours
+
+// Allow automatic adhan playback without user gesture.
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // ── App icon paths ──
 const iconPath = path.join(__dirname, '..', 'public', 'icon-256.png');
 const trayIconPath = path.join(__dirname, '..', 'public', 'tray-icon.png');
+const splashAudioPath = path.join(__dirname, '..', 'public', 'audio', 'LetsPray.mp3');
+
+function normalizeVersion(version) {
+  return String(version || '')
+    .trim()
+    .replace(/^v/i, '')
+    .split('-')[0];
+}
+
+function compareVersions(a, b) {
+  const left = normalizeVersion(a).split('.').map((n) => parseInt(n, 10) || 0);
+  const right = normalizeVersion(b).split('.').map((n) => parseInt(n, 10) || 0);
+  const maxLen = Math.max(left.length, right.length);
+  for (let i = 0; i < maxLen; i += 1) {
+    const l = left[i] || 0;
+    const r = right[i] || 0;
+    if (l > r) return 1;
+    if (l < r) return -1;
+  }
+  return 0;
+}
+
+function fetchLatestRelease() {
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      UPDATE_CHECK_URL,
+      {
+        headers: {
+          'User-Agent': 'LetsPray-App',
+          Accept: 'application/vnd.github+json',
+        },
+      },
+      (res) => {
+        let raw = '';
+        res.on('data', (chunk) => { raw += chunk; });
+        res.on('end', () => {
+          if (res.statusCode !== 200) {
+            reject(new Error(`GitHub API failed: ${res.statusCode}`));
+            return;
+          }
+          try {
+            resolve(JSON.parse(raw));
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+    );
+
+    req.on('error', reject);
+    req.setTimeout(12000, () => {
+      req.destroy(new Error('GitHub API timeout'));
+    });
+  });
+}
+
+function notifyUpdateAvailable(info) {
+  if (!win || win.isDestroyed()) return;
+  win.webContents.send('update:available', info);
+}
+
+async function checkForUpdates(options = {}) {
+  const { notifyRenderer = true } = options;
+  if (isDev) {
+    return { available: false, currentVersion: app.getVersion() };
+  }
+
+  const currentVersion = app.getVersion();
+  try {
+    const release = await fetchLatestRelease();
+    const latestVersion = normalizeVersion(release.tag_name || release.name);
+    if (!latestVersion) {
+      return { available: false, currentVersion };
+    }
+
+    const hasUpdate = compareVersions(latestVersion, currentVersion) > 0;
+    if (!hasUpdate) {
+      return { available: false, currentVersion, latestVersion };
+    }
+
+    const info = {
+      available: true,
+      currentVersion,
+      latestVersion,
+      releaseUrl: release.html_url || 'https://github.com/Jalal-Nasser/LetsPray/releases',
+      publishedAt: release.published_at || null,
+      releaseName: release.name || '',
+    };
+
+    if (notifyRenderer && latestVersion !== lastNotifiedUpdateVersion) {
+      lastNotifiedUpdateVersion = latestVersion;
+      notifyUpdateAvailable(info);
+    }
+
+    return info;
+  } catch (err) {
+    console.warn('Update check failed:', err.message);
+    return { available: false, currentVersion, error: err.message };
+  }
+}
+
+function startUpdateChecks() {
+  if (updateCheckTimer) clearInterval(updateCheckTimer);
+  checkForUpdates({ notifyRenderer: true });
+  updateCheckTimer = setInterval(() => {
+    checkForUpdates({ notifyRenderer: true });
+  }, UPDATE_CHECK_INTERVAL_MS);
+}
 
 // ── Electron Store (ESM dynamic import) ──
 async function initStore() {
@@ -39,6 +157,19 @@ async function initStore() {
 
 // ── Splash Screen ──
 function createSplash() {
+  let splashAudioSrc = '';
+  try {
+    // Use data URI to avoid cross-origin/file protocol issues inside splash data URL page.
+    if (fs.existsSync(splashAudioPath)) {
+      const audioBuffer = fs.readFileSync(splashAudioPath);
+      splashAudioSrc = `data:audio/mpeg;base64,${audioBuffer.toString('base64')}`;
+    } else {
+      console.warn('Splash audio file not found:', splashAudioPath);
+    }
+  } catch (err) {
+    console.warn('Failed to load splash audio:', err);
+  }
+
   splashWin = new BrowserWindow({
     width: 400,
     height: 320,
@@ -60,7 +191,7 @@ function createSplash() {
         background: transparent;
         display: flex; align-items: center; justify-content: center;
         height: 100vh; width: 100vw;
-        font-family: 'Segoe UI', Tahoma, sans-serif;
+        font-family: 'Segoe UI', 'Tahoma', system-ui, -apple-system, sans-serif;
         overflow: hidden;
       }
       .splash {
@@ -79,8 +210,8 @@ function createSplash() {
         0%,100% { transform:scale(1); filter:drop-shadow(0 0 10px rgba(16,185,129,0.3)); }
         50% { transform:scale(1.05); filter:drop-shadow(0 0 25px rgba(16,185,129,0.5)); }
       }
-      .title { font-size:28px; font-weight:700; color:#34d399; margin-bottom:6px; direction:rtl; }
-      .subtitle { font-size:14px; color:#8899aa; margin-bottom:24px; letter-spacing:1px; }
+      .title { font-size:38px; font-weight:700; font-family:'Aref Ruqaa', 'Amiri', serif; color:#34d399; margin-bottom:6px; direction:rtl; letter-spacing:0; }
+      .subtitle { font-size:14px; color:#8899aa; margin-bottom:24px; letter-spacing:1px; font-family:'Amiri', 'Tahoma', sans-serif; }
       .loader { width:140px; height:3px; background:rgba(255,255,255,0.08); border-radius:2px; margin:0 auto; overflow:hidden; }
       .loader-bar { width:40%; height:100%; background:linear-gradient(90deg,#10b981,#34d399); border-radius:2px; animation:load 1.5s ease-in-out infinite; }
       @keyframes load { 0% { transform:translateX(-100%); } 100% { transform:translateX(350%); } }
@@ -88,6 +219,7 @@ function createSplash() {
     </style>
     </head>
     <body>
+      <audio id="splash-audio" src="${splashAudioSrc}" preload="auto" autoplay></audio>
       <div class="splash">
         <div class="logo-wrap">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none" style="width:100%;height:100%">
@@ -105,8 +237,18 @@ function createSplash() {
         <div class="title">حي على الصلاة</div>
         <div class="subtitle">Let's Pray</div>
         <div class="loader"><div class="loader-bar"></div></div>
-        <div class="version">v1.0.2</div>
+        <div class="version">v1.0.4</div>
       </div>
+      <script>
+        const splashAudio = document.getElementById('splash-audio');
+        const tryPlay = () => {
+          if (!splashAudio) return;
+          splashAudio.volume = 0.85;
+          splashAudio.play().catch(() => {});
+        };
+        tryPlay();
+        setTimeout(tryPlay, 120);
+      </script>
     </body>
     </html>`;
 
@@ -149,7 +291,7 @@ function createWindow() {
       }
       win.show();
       if (isDev) win.webContents.openDevTools({ mode: 'detach' });
-    }, 1800); // show splash for at least 1.8s
+    }, 5000); // show splash for at least 5s
   });
 
   win.on('close', (event) => {
@@ -185,6 +327,7 @@ app.whenReady().then(async () => {
   await initStore();
   createWindow();
   createTray();
+  startUpdateChecks();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -196,11 +339,18 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => { isQuitting = true; });
+app.on('before-quit', () => {
+  if (updateCheckTimer) {
+    clearInterval(updateCheckTimer);
+    updateCheckTimer = null;
+  }
+});
 
 // ── IPC Handlers ──
 ipcMain.handle('store:get', (_e, key) => store ? store.get(key) : undefined);
 ipcMain.handle('store:getAll', () => store ? store.store : {});
 ipcMain.on('store:set', (_e, key, value) => { if (store) store.set(key, value); });
+ipcMain.handle('update:check', async () => checkForUpdates({ notifyRenderer: false }));
 
 let adhanWin = null;
 

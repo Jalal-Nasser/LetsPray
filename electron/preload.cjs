@@ -8,6 +8,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // Notifications
     showNotification: (title, body) => ipcRenderer.send('notification:show', title, body),
+    checkForUpdates: () => ipcRenderer.invoke('update:check'),
+    onUpdateAvailable: (callback) => {
+        const listener = (_event, payload) => callback(payload);
+        ipcRenderer.on('update:available', listener);
+        return () => ipcRenderer.removeListener('update:available', listener);
+    },
 
     // Window controls
     minimize: () => ipcRenderer.send('window:minimize'),

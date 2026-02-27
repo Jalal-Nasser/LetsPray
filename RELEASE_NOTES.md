@@ -4,6 +4,28 @@ This file tracks functional changes, feature additions, and corresponding `.exe`
 
 ---
 
+## [v1.0.4] - Stability + Update Awareness (2026-02-27)
+
+### Added
+- **In-App Update Detection**: The app now checks GitHub Releases in the background and shows an in-app banner when a newer version is available.
+- **Update Actions in UI**: Added direct action button inside the app to open the release download page.
+- **Manual Update Check Bridge**: Added secure preload APIs for update-check requests and update availability events.
+
+### Improved
+- **Prayer Countdown Continuity**: Countdown now correctly rolls over to the next day's Fajr after Isha.
+- **Adhan Reliability**: Prayer-time notification + audio trigger logic moved to app-level monitoring so it works across views.
+- **Location UX**: Better auto-detect flow (GPS first, IP fallback) and clearer display for current detected city.
+- **Splash Experience**:
+  - Splash now stays visible for 5 seconds.
+  - Startup sound handling improved.
+  - Splash typography aligned with the main app style.
+
+### Executable / Build
+- **Target OS**: Windows `.exe`
+- **Release Package**: `Let's Pray Setup 1.0.4.exe`
+
+---
+
 ## [v1.0.0] - Initial Let'sPray Release (2026-02-27)
 
 ### Added

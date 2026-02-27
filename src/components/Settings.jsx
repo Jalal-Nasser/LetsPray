@@ -105,7 +105,9 @@ export default function Settings({ settings, onUpdate, onBack }) {
     useEffect(() => () => { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } }, []);
 
     const handleCityChange = (e) => {
-        const idx = parseInt(e.target.value, 10);
+        const selectedValue = e.target.value;
+        if (selectedValue === 'current') return;
+        const idx = parseInt(selectedValue, 10);
         if (idx >= 0) {
             const c = CITIES[idx];
             onUpdate('location', { city: isArabic ? c.city : c.cityEn, country: isArabic ? c.country : c.countryEn, lat: c.lat, lon: c.lon, timezone: c.tz });
@@ -209,13 +211,50 @@ export default function Settings({ settings, onUpdate, onBack }) {
         else window.open(url, '_blank');
     };
 
+    const handleTestNotification = () => {
+        const title = isArabic ? 'اختبار الإشعار' : 'Notification Test';
+        const body = isArabic ? 'هذا إشعار تجريبي للتأكد من عمل التنبيهات.' : 'This is a test notification to verify alerts.';
+        if (window.electronAPI?.showNotification) {
+            window.electronAPI.showNotification(title, body);
+            return;
+        }
+        if (!('Notification' in window)) return;
+        if (Notification.permission === 'granted') {
+            new Notification(title, { body });
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') new Notification(title, { body });
+            });
+        }
+    };
+
+    const handleTestAdhanNow = () => {
+        const selected = MUEZZINS.find(m => m.id === settings.muezzin) || MUEZZINS[0];
+        if (!selected) return;
+        handlePlayMuezzin(selected);
+    };
+
+    const hasLocation = settings.location?.lat != null && settings.location?.lon != null;
     const currentCityIdx = CITIES.findIndex(c => Math.abs(c.lat - (settings.location?.lat || 0)) < 0.01 && Math.abs(c.lon - (settings.location?.lon || 0)) < 0.01);
+    const currentCityValue = currentCityIdx >= 0 ? String(currentCityIdx) : (hasLocation ? 'current' : '-1');
 
     return (
         <div className="settings-page">
             <div className="settings-header">
                 <button className="settings-back" onClick={onBack}>←</button>
-                <h2 className="settings-title">{t('settings.title')}</h2>
+                <h2 className="settings-title">{t('settings.title')} <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>v1.0.4</span></h2>
+            </div>
+
+            <div className="settings-group" style={{ marginTop: '8px' }}>
+                <div className="settings-group-label">{isArabic ? 'اختبار سريع' : 'Quick Test'}</div>
+                <div className="settings-item" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button className="detect-btn" onClick={handleTestAdhanNow} style={{ flex: 1, minWidth: '170px' }}>
+                        {isArabic ? 'اختبار صوت الأذان' : 'Test Adhan Sound'}
+                    </button>
+                    <button className="detect-btn" onClick={handleTestNotification} style={{ flex: 1, minWidth: '170px' }}>
+                        {isArabic ? 'اختبار الإشعار' : 'Test Notification'}
+                    </button>
+                </div>
             </div>
 
             <div className="settings-grid">
@@ -224,8 +263,11 @@ export default function Settings({ settings, onUpdate, onBack }) {
                     <div className="settings-group-label">{t('settings.location')}</div>
                     <div className="settings-item">
                         <span className="settings-label">{t('settings.city')}</span>
-                        <select className="settings-select" value={currentCityIdx} onChange={handleCityChange}>
+                        <select className="settings-select" value={currentCityValue} onChange={handleCityChange}>
                             <option value={-1}>-- {t('settings.city')} --</option>
+                            {hasLocation && currentCityIdx < 0 && (
+                                <option value="current">{settings.location.city}, {settings.location.country}</option>
+                            )}
                             {CITIES.map((c, i) => (<option key={i} value={i}>{isArabic ? c.city : c.cityEn}, {isArabic ? c.country : c.countryEn}</option>))}
                         </select>
                     </div>
@@ -397,7 +439,7 @@ export default function Settings({ settings, onUpdate, onBack }) {
                         <div className="about-name" style={{ fontFamily: isArabic ? '' : "'Cinzel Decorative', 'Outfit', sans-serif" }}>
                             {isArabic ? 'حي على الصلاة' : "Let's Pray"}
                         </div>
-                        <div className="about-version">v1.0.0</div>
+                        <div className="about-version">v1.0.4</div>
                     </div>
                     <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{showAbout ? '▲' : '▼'}</span>
                 </div>

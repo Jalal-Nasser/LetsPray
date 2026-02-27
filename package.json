@@ -1,7 +1,7 @@
 {
   "name": "letspray",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.4",
   "type": "module",
   "description": "Let's Pray - Islamic Prayer Times Desktop App",
   "author": "Jalal Nasser <jalal@mdeploy.dev>",
