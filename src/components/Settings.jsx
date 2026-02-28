@@ -37,6 +37,7 @@ const METHODS = [
 ];
 
 const PRAYER_KEYS = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
+const PRIVACY_POLICY_URL = 'https://github.com/Jalal-Nasser/LetsPray/blob/main/PRIVACY.md';
 
 const CITIES = [
     { city: 'مكة المكرمة', cityEn: 'Makkah', country: 'السعودية', countryEn: 'Saudi Arabia', lat: 21.4225, lon: 39.8262, tz: 'Asia/Riyadh' },
@@ -454,6 +455,9 @@ export default function Settings({ settings, onUpdate, onBack }) {
                             </button>
                             <button className="about-link" onClick={() => openLink('https://mdeploy.dev')}>
                                 mDeploy
+                            </button>
+                            <button className="about-link" onClick={() => openLink(PRIVACY_POLICY_URL)}>
+                                {isArabic ? 'سياسة الخصوصية' : 'Privacy Policy'}
                             </button>
                         </div>
                     </div>
