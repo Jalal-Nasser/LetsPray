@@ -4,6 +4,23 @@ This file tracks functional changes, feature additions, and corresponding `.exe`
 
 ---
 
+## [v1.0.5] - Microsoft Store Readiness (2026-03-03)
+
+### Added
+- **Microsoft Store Packaging**: Added AppX packaging pipeline and metadata for Partner Center publishing.
+- **Store Assets Set**: Added the full required AppX image set including splash and tile variants.
+- **Privacy Policy Surface**: Added a dedicated `PRIVACY.md` policy and linked it from app settings.
+
+### Improved
+- **Windows Desktop Chrome**: Window control symbols now follow Windows style (`—`, `☐`, `✕`) while keeping theme colors.
+- **Release Structure**: Standardized build outputs for both installer and Store package workflows.
+
+### Build / Distribution
+- **Target OS**: Windows AppX (`.appx`)
+- **Release Package**: `Let's Pray Store 1.0.5.appx`
+
+---
+
 ## [v1.0.4] - Stability + Update Awareness (2026-02-27)
 
 ### Added
