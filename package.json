@@ -12,6 +12,7 @@
     "dev:electron": "cross-env NODE_ENV=development electron .",
     "build": "vite build",
     "build:electron": "vite build && electron-builder",
+    "build:msstore": "vite build && electron-builder --win appx --publish never",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -48,7 +49,8 @@
     "productName": "Let's Pray",
     "icon": "public/icon-256.png",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "dist/",
@@ -64,6 +66,15 @@
       "installerIcon": "public/favicon.ico",
       "uninstallerIcon": "public/favicon.ico",
       "installerHeaderIcon": "public/favicon.ico"
+    },
+    "appx": {
+      "displayName": "Let's Pray",
+      "publisherDisplayName": "Jalal Nasser",
+      "applicationId": "LetsPray",
+      "identityName": "JalalNasser.LetsPray",
+      "publisher": "CN=92CE8CEC-534B-45DF-B9FE-D346FD430CC0",
+      "backgroundColor": "#0f1923",
+      "artifactName": "${productName} Store ${version}.${ext}"
     }
   }
 }
