@@ -4,6 +4,26 @@ This file tracks functional changes, feature additions, and corresponding `.exe`
 
 ---
 
+## [v1.0.9] - AppX Location Reliability + Notification Icon (2026-03-04)
+
+### Fixed
+- **AppX Auto-Location Flow**: Fixed inconsistent location detection in `APPX` builds where auto-detect could fail in renderer and fall back incorrectly.
+- **Saved Location Safety**: Prevented replacing an already saved city with less-accurate IP results unless GPS succeeds.
+- **Auto Detect Button in AppX**: Added main-process IP detection fallback via secure IPC so the location button works even when renderer network restrictions apply.
+
+### Improved
+- **Permission Handling**: Added explicit Electron permission handlers for geolocation/notifications in packaged builds.
+- **Adhan Notification Icon**: Replaced the alert icon with the app logo (crescent + star) in the custom popup.
+- **Version Display Consistency**: Updated runtime version display to follow current app version in splash/settings/about.
+
+### Build / Distribution
+- **Target OS**: Windows AppX (`.appx`) + Windows installer (`.exe`)
+- **Release Packages**:
+  - `Let's Pray Store 1.0.9.appx`
+  - `Let's Pray Setup 1.0.8.exe`
+
+---
+
 ## [v1.0.5] - Microsoft Store Readiness (2026-03-03)
 
 ### Added
