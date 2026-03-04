@@ -77,6 +77,89 @@ function fetchLatestRelease() {
   });
 }
 
+function fetchJson(url, timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      url,
+      {
+        headers: {
+          'User-Agent': 'LetsPray-App',
+          Accept: 'application/json',
+        },
+      },
+      (res) => {
+        let raw = '';
+        res.on('data', (chunk) => { raw += chunk; });
+        res.on('end', () => {
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            reject(new Error(`HTTP ${res.statusCode}`));
+            return;
+          }
+          try {
+            resolve(JSON.parse(raw));
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+    );
+
+    req.on('error', reject);
+    req.setTimeout(timeoutMs, () => {
+      req.destroy(new Error('Request timeout'));
+    });
+  });
+}
+
+async function detectLocationByIp() {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const providers = [
+    {
+      name: 'ipapi',
+      fn: async () => {
+        const data = await fetchJson('https://ipapi.co/json/');
+        if (data?.latitude == null || data?.longitude == null) return null;
+        return {
+          city: data.city || 'Unknown',
+          country: data.country_name || '',
+          lat: data.latitude,
+          lon: data.longitude,
+          timezone: data.timezone || timezone,
+          source: 'ip',
+          provider: 'ipapi',
+        };
+      },
+    },
+    {
+      name: 'ipwho',
+      fn: async () => {
+        const data = await fetchJson('https://ipwho.is/');
+        if (data?.latitude == null || data?.longitude == null) return null;
+        return {
+          city: data.city || 'Unknown',
+          country: data.country || '',
+          lat: data.latitude,
+          lon: data.longitude,
+          timezone: data.timezone?.id || timezone,
+          source: 'ip',
+          provider: 'ipwho',
+        };
+      },
+    },
+  ];
+
+  for (const provider of providers) {
+    try {
+      const location = await provider.fn();
+      if (location?.lat != null && location?.lon != null) return location;
+    } catch (err) {
+      console.warn(`[Location] ${provider.name} failed:`, err.message);
+    }
+  }
+
+  return null;
+}
+
 function notifyUpdateAvailable(info) {
   if (!win || win.isDestroyed()) return;
   win.webContents.send('update:available', info);
@@ -157,6 +240,7 @@ async function initStore() {
 
 // ── Splash Screen ──
 function createSplash() {
+  const appVersion = app.getVersion();
   let splashAudioSrc = '';
   try {
     // Use data URI to avoid cross-origin/file protocol issues inside splash data URL page.
@@ -239,7 +323,7 @@ function createSplash() {
         <div class="title">حي على الصلاة</div>
         <div class="subtitle">Let's Pray</div>
         <div class="loader"><div class="loader-bar"></div></div>
-        <div class="version">v1.0.4</div>
+        <div class="version">v${appVersion}</div>
       </div>
       <script>
         const splashAudio = document.getElementById('splash-audio');
@@ -276,6 +360,20 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: false,
     },
+  });
+
+  // Ensure geolocation works reliably in packaged builds (including AppX).
+  const session = win.webContents.session;
+  session.setPermissionCheckHandler((_webContents, permission) => {
+    if (permission === 'geolocation' || permission === 'notifications') return true;
+    return false;
+  });
+  session.setPermissionRequestHandler((_webContents, permission, callback) => {
+    if (permission === 'geolocation' || permission === 'notifications') {
+      callback(true);
+      return;
+    }
+    callback(false);
   });
 
   if (isDev) {
@@ -351,6 +449,8 @@ app.on('before-quit', () => {
 // ── IPC Handlers ──
 ipcMain.handle('store:get', (_e, key) => store ? store.get(key) : undefined);
 ipcMain.handle('store:getAll', () => store ? store.store : {});
+ipcMain.handle('app:getVersion', () => app.getVersion());
+ipcMain.handle('location:detectIp', async () => detectLocationByIp());
 ipcMain.on('store:set', (_e, key, value) => { if (store) store.set(key, value); });
 ipcMain.handle('update:check', async () => checkForUpdates({ notifyRenderer: false }));
 
@@ -418,7 +518,7 @@ function createAdhanWindow(title, body) {
         flex-shrink: 0;
         animation: pulse 2s infinite;
       }
-      .icon-box svg { width: 28px; height: 28px; fill: #34d399; }
+      .icon-box svg { width: 32px; height: 32px; }
       @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16,185,129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129, 0); } }
       .text-content { flex-grow: 1; }
       .title { font-size: 18px; font-weight: 700; color: #34d399; margin-bottom: 4px; }
@@ -437,7 +537,16 @@ function createAdhanWindow(title, body) {
       <div class="notification">
         <button class="close-btn" onclick="const { ipcRenderer } = require('electron'); ipcRenderer.send('adhan:close');">&times;</button>
         <div class="icon-box">
-          <svg viewBox="0 0 24 24"><path d="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M11,19.93C7.05,19.43 4,16.05 4,12C4,7.95 7.05,4.57 11,4.07V19.93M13,4.07C16.95,4.57 20,7.95 20,12C20,16.05 16.95,19.43 13,19.93V4.07Z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="notifHilalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#34d399"/>
+                <stop offset="100%" stop-color="#059669"/>
+              </linearGradient>
+            </defs>
+            <path d="M 44 8 C 28 8,14 22,14 38 C 14 54,28 68,44 68 C 33 61,26 50,26 38 C 26 26,33 15,44 8 Z" fill="url(#notifHilalGrad)"/>
+            <path d="M 52 24 L 53.8 29 L 59 29.5 L 55 32.5 L 56.2 37.5 L 52 34.8 L 47.8 37.5 L 49 32.5 L 45 29.5 L 50.2 29 Z" fill="url(#notifHilalGrad)"/>
+          </svg>
         </div>
         <div class="text-content">
           <div class="title">${title}</div>

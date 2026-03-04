@@ -4,6 +4,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Store
     getStoreValue: (key) => ipcRenderer.invoke('store:get', key),
     getAllSettings: () => ipcRenderer.invoke('store:getAll'),
+    getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
+    detectLocationByIp: () => ipcRenderer.invoke('location:detectIp'),
     setStoreValue: (key, value) => ipcRenderer.send('store:set', key, value),
 
     // Notifications

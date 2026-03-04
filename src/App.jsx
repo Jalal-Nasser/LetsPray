@@ -30,8 +30,9 @@ function getAudioBase() {
 
 // Auto-detect city/timezone:
 // 1) GPS (if user allows)
-// 2) IP APIs fallback
-async function autoDetectLocation(language = 'ar') {
+// 2) Optional IP APIs fallback
+async function autoDetectLocation(language = 'ar', options = {}) {
+  const { allowIpFallback = true } = options;
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   // Step 1: GPS (best accuracy)
@@ -73,13 +74,37 @@ async function autoDetectLocation(language = 'ar') {
         lat,
         lon,
         timezone,
+        source: 'gps',
       };
     }
   } catch (e) {
     console.warn('GPS auto-detect failed:', e);
   }
 
-  // Step 2: IP API 1
+  if (!allowIpFallback) {
+    return null;
+  }
+
+  // Step 2: Main-process IP detect (works in AppX without renderer CORS issues)
+  try {
+    if (window.electronAPI?.detectLocationByIp) {
+      const detected = await window.electronAPI.detectLocationByIp();
+      if (detected?.lat != null && detected?.lon != null) {
+        return {
+          city: detected.city || 'Unknown',
+          country: detected.country || '',
+          lat: detected.lat,
+          lon: detected.lon,
+          timezone: detected.timezone || timezone,
+          source: 'ip',
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('Main-process IP detect failed:', e);
+  }
+
+  // Step 3: IP API 1 (renderer fallback)
   try {
     const res = await fetch('https://ipapi.co/json/');
     if (res.ok) {
@@ -91,12 +116,13 @@ async function autoDetectLocation(language = 'ar') {
           lat: data.latitude,
           lon: data.longitude,
           timezone: data.timezone || timezone,
+          source: 'ip',
         };
       }
     }
   } catch (e) { console.warn('ipapi.co failed:', e); }
 
-  // Step 3: IP API 2
+  // Step 4: IP API 2
   try {
     const res = await fetch('https://ipwho.is/');
     if (res.ok) {
@@ -108,12 +134,13 @@ async function autoDetectLocation(language = 'ar') {
           lat: data.latitude,
           lon: data.longitude,
           timezone: data.timezone?.id || timezone,
+          source: 'ip',
         };
       }
     }
   } catch (e) { console.warn('ipwho.is failed:', e); }
 
-  // Step 4: IP API 3 (HTTP only, may be blocked)
+  // Step 5: IP API 3 (HTTP only, may be blocked)
   try {
     const res = await fetch('http://ip-api.com/json/?fields=city,country,lat,lon,timezone');
     if (res.ok) {
@@ -125,6 +152,7 @@ async function autoDetectLocation(language = 'ar') {
           lat: data.lat,
           lon: data.lon,
           timezone: data.timezone || timezone,
+          source: 'ip',
         };
       }
     }
@@ -164,13 +192,22 @@ function App() {
           };
         }
 
-        // Auto-detect location on every launch to keep it accurate.
+        // Keep user's saved city unless GPS succeeds. IP is used only on first launch.
         try {
-          const detected = await autoDetectLocation(all.language || 'ar');
-          if (detected?.lat != null && detected?.lon != null) {
+          const hasSavedLocation = all.location?.lat != null && all.location?.lon != null;
+          const detected = await autoDetectLocation(all.language || 'ar', {
+            allowIpFallback: !hasSavedLocation,
+          });
+
+          const canApplyDetected =
+            detected?.lat != null &&
+            detected?.lon != null &&
+            (!hasSavedLocation || detected.source === 'gps');
+
+          if (canApplyDetected) {
             all.location = detected;
             if (window.electronAPI) window.electronAPI.setStoreValue('location', detected);
-          } else if (!all.location || all.location.lat == null || all.location.lon == null) {
+          } else if (!hasSavedLocation) {
             const fallback = {
               city: 'Makkah',
               country: 'Saudi Arabia',

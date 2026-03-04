@@ -100,10 +100,20 @@ export default function Settings({ settings, onUpdate, onBack }) {
     const [playingId, setPlayingId] = useState(null);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [showAbout, setShowAbout] = useState(false);
+    const [appVersion, setAppVersion] = useState('');
     const audioRef = useRef(null);
     const isArabic = i18n.language === 'ar';
 
     useEffect(() => () => { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } }, []);
+
+    useEffect(() => {
+        if (!window.electronAPI?.getAppVersion) return;
+        window.electronAPI.getAppVersion()
+            .then((version) => {
+                if (version) setAppVersion(version);
+            })
+            .catch(() => { });
+    }, []);
 
     const handleCityChange = (e) => {
         const selectedValue = e.target.value;
@@ -149,6 +159,25 @@ export default function Settings({ settings, onUpdate, onBack }) {
             }
 
             // ── Step 2: Fallback to IP geolocation (less accurate — ISP city level) ──
+            if (window.electronAPI?.detectLocationByIp) {
+                try {
+                    const detected = await window.electronAPI.detectLocationByIp();
+                    if (detected?.lat != null && detected?.lon != null) {
+                        onUpdate('location', {
+                            city: detected.city || 'Unknown',
+                            country: detected.country || '',
+                            lat: detected.lat,
+                            lon: detected.lon,
+                            timezone: detected.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+                        });
+                        setDetecting(false);
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('Main-process IP detect failed:', err);
+                }
+            }
+
             let data = null;
             try { const r = await fetch('https://ipapi.co/json/'); if (r.ok) data = await r.json(); } catch { }
             if (!data?.latitude) {
@@ -243,7 +272,7 @@ export default function Settings({ settings, onUpdate, onBack }) {
         <div className="settings-page">
             <div className="settings-header">
                 <button className="settings-back" onClick={onBack}>←</button>
-                <h2 className="settings-title">{t('settings.title')} <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>v1.0.4</span></h2>
+                <h2 className="settings-title">{t('settings.title')} <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>v{appVersion || '1.0.9'}</span></h2>
             </div>
 
             <div className="settings-group" style={{ marginTop: '8px' }}>
@@ -440,7 +469,7 @@ export default function Settings({ settings, onUpdate, onBack }) {
                         <div className="about-name" style={{ fontFamily: isArabic ? '' : "'Cinzel Decorative', 'Outfit', sans-serif" }}>
                             {isArabic ? 'حي على الصلاة' : "Let's Pray"}
                         </div>
-                        <div className="about-version">v1.0.4</div>
+                        <div className="about-version">v{appVersion || '1.0.9'}</div>
                     </div>
                     <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{showAbout ? '▲' : '▼'}</span>
                 </div>
@@ -495,3 +524,4 @@ export default function Settings({ settings, onUpdate, onBack }) {
         </div>
     );
 }
+

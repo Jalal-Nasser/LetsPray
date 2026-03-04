@@ -1,7 +1,7 @@
 {
   "name": "letspray",
   "private": true,
-  "version": "1.0.5",
+  "version": "1.0.9",
   "type": "module",
   "description": "Let's Pray - Islamic Prayer Times Desktop App",
   "author": "Jalal Nasser <jalal@mdeploy.dev>",
@@ -74,6 +74,11 @@
       "identityName": "JalalNasser.LetsPray",
       "publisher": "CN=92CE8CEC-534B-45DF-B9FE-D346FD430CC0",
       "backgroundColor": "#0f1923",
+      "capabilities": [
+        "runFullTrust",
+        "internetClient",
+        "location"
+      ],
       "artifactName": "${productName} Store ${version}.${ext}"
     }
   }
