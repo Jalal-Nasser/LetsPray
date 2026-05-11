@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, Notification, Tray, Menu, nativeImage, shel
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+const { muteOtherApps, restoreMutedApps } = require('./windowsMedia.cjs');
 
 let store = null;
 let tray = null;
@@ -9,6 +10,7 @@ let win = null;
 let splashWin = null;
 let isQuitting = false;
 const isDev = process.env.NODE_ENV === 'development';
+const startHidden = process.argv.includes('--hidden') || process.argv.includes('--minimized');
 let updateCheckTimer = null;
 let lastNotifiedUpdateVersion = null;
 
@@ -214,6 +216,49 @@ function startUpdateChecks() {
 }
 
 // ── Electron Store (ESM dynamic import) ──
+function getAppProcessIds() {
+  const pids = new Set([process.pid]);
+
+  try {
+    for (const metric of app.getAppMetrics()) {
+      if (metric?.pid) pids.add(metric.pid);
+    }
+  } catch (err) {
+    console.warn('Failed to read Electron app metrics:', err.message);
+  }
+
+  for (const window of BrowserWindow.getAllWindows()) {
+    try {
+      const pid = window.webContents.getOSProcessId();
+      if (pid) pids.add(pid);
+    } catch {
+      // Window may be closing while we collect process IDs.
+    }
+  }
+
+  return [...pids];
+}
+
+function applyAutoStart(enabled) {
+  if (isDev) return { supported: false, enabled: false };
+  if (process.platform !== 'win32') return { supported: false, enabled: false };
+
+  try {
+    app.setLoginItemSettings({
+      openAtLogin: Boolean(enabled),
+      openAsHidden: true,
+      path: process.execPath,
+      args: ['--hidden'],
+    });
+
+    const settings = app.getLoginItemSettings({ path: process.execPath, args: ['--hidden'] });
+    return { supported: true, enabled: Boolean(settings.openAtLogin) };
+  } catch (err) {
+    console.warn('Failed to update Windows startup setting:', err.message);
+    return { supported: true, enabled: false, error: err.message };
+  }
+}
+
 async function initStore() {
   try {
     const { default: Store } = await import('electron-store');
@@ -227,7 +272,7 @@ async function initStore() {
         timeFormat: '12h',
         audioEnabled: true,
         notificationsEnabled: true,
-        autoStart: false,
+        autoStart: true,
         highLatitudeRule: 'MiddleOfTheNight',
         offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
         muezzin: 'makkah',
@@ -389,7 +434,7 @@ function createWindow() {
         splashWin.close();
         splashWin = null;
       }
-      win.show();
+      if (!startHidden) win.show();
       if (isDev) win.webContents.openDevTools({ mode: 'detach' });
     }, 5000); // show splash for at least 5s
   });
@@ -423,8 +468,9 @@ function createTray() {
 
 // ── App lifecycle ──
 app.whenReady().then(async () => {
-  createSplash();
+  if (!startHidden) createSplash();
   await initStore();
+  if (store) applyAutoStart(store.get('autoStart'));
   createWindow();
   createTray();
   startUpdateChecks();
@@ -444,6 +490,9 @@ app.on('before-quit', () => {
     clearInterval(updateCheckTimer);
     updateCheckTimer = null;
   }
+  restoreMutedApps(app.getPath('userData')).catch((err) => {
+    console.warn('Failed to restore media sessions before quit:', err.message);
+  });
 });
 
 // ── IPC Handlers ──
@@ -451,8 +500,28 @@ ipcMain.handle('store:get', (_e, key) => store ? store.get(key) : undefined);
 ipcMain.handle('store:getAll', () => store ? store.store : {});
 ipcMain.handle('app:getVersion', () => app.getVersion());
 ipcMain.handle('location:detectIp', async () => detectLocationByIp());
-ipcMain.on('store:set', (_e, key, value) => { if (store) store.set(key, value); });
+ipcMain.on('store:set', (_e, key, value) => {
+  if (!store) return;
+  store.set(key, value);
+  if (key === 'autoStart') applyAutoStart(value);
+});
 ipcMain.handle('update:check', async () => checkForUpdates({ notifyRenderer: false }));
+ipcMain.handle('media:muteOthersForAdhan', async () => {
+  try {
+    return await muteOtherApps(app.getPath('userData'), getAppProcessIds());
+  } catch (err) {
+    console.warn('Failed to mute other media sessions:', err.message, err.stderr || '');
+    return { error: err.message };
+  }
+});
+ipcMain.handle('media:restoreMutedForAdhan', async () => {
+  try {
+    return await restoreMutedApps(app.getPath('userData'));
+  } catch (err) {
+    console.warn('Failed to restore media sessions:', err.message, err.stderr || '');
+    return { error: err.message };
+  }
+});
 
 let adhanWin = null;
 

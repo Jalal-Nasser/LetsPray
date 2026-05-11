@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Resolve correct base URL for local audio assets.
@@ -11,7 +11,9 @@ const AUDIO_BASE = (() => {
             // file:///C:/path/to/dist/index.html -> file:///C:/path/to/dist/audio/
             return loc.replace(/\/[^/]+$/, '') + '/audio/';
         }
-    } catch { }
+    } catch {
+        // Fall back to the Vite public path.
+    }
     return '/audio/';
 })();
 
@@ -88,7 +90,7 @@ const MUEZZINS = [
 const DEFAULT_SETTINGS = {
     location: null, calculationMethod: 'UmmAlQura', madhab: 'Shafi', language: 'ar',
     theme: 'dark', timeFormat: '12h', audioEnabled: true, notificationsEnabled: true,
-    autoStart: false, highLatitudeRule: 'MiddleOfTheNight',
+    autoStart: true, highLatitudeRule: 'MiddleOfTheNight',
     offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
     // 'muezzin' key = default Adhan voice. Valid IDs: makkah | madinah | mishary | kurtishi | abdulbasit | husary | minshawi
     muezzin: 'makkah',
@@ -102,9 +104,27 @@ export default function Settings({ settings, onUpdate, onBack }) {
     const [showAbout, setShowAbout] = useState(false);
     const [appVersion, setAppVersion] = useState('');
     const audioRef = useRef(null);
+    const previewTokenRef = useRef(0);
     const isArabic = i18n.language === 'ar';
 
-    useEffect(() => () => { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } }, []);
+    const stopPreviewAudio = useCallback(() => {
+        previewTokenRef.current += 1;
+        const currentAudio = audioRef.current;
+        if (!currentAudio) {
+            setPlayingId(null);
+            return;
+        }
+
+        currentAudio.pause();
+        currentAudio.onended = null;
+        currentAudio.onerror = null;
+        currentAudio.src = '';
+        currentAudio.load();
+        audioRef.current = null;
+        setPlayingId(null);
+    }, []);
+
+    useEffect(() => () => { stopPreviewAudio(); }, [stopPreviewAudio]);
 
     useEffect(() => {
         if (!window.electronAPI?.getAppVersion) return;
@@ -112,7 +132,9 @@ export default function Settings({ settings, onUpdate, onBack }) {
             .then((version) => {
                 if (version) setAppVersion(version);
             })
-            .catch(() => { });
+            .catch(() => {
+                // Version display is optional.
+            });
     }, []);
 
     const handleCityChange = (e) => {
@@ -151,7 +173,9 @@ export default function Settings({ settings, onUpdate, onBack }) {
                         city = addr.city || addr.town || addr.village || addr.county || '';
                         country = addr.country || '';
                     }
-                } catch { }
+                } catch {
+                    // IP fallback can still provide coordinates without a city label.
+                }
                 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
                 onUpdate('location', { city: city || `${lat.toFixed(4)}, ${lon.toFixed(4)}`, country, lat, lon, timezone: tz });
                 setDetecting(false);
@@ -179,12 +203,16 @@ export default function Settings({ settings, onUpdate, onBack }) {
             }
 
             let data = null;
-            try { const r = await fetch('https://ipapi.co/json/'); if (r.ok) data = await r.json(); } catch { }
+            try { const r = await fetch('https://ipapi.co/json/'); if (r.ok) data = await r.json(); } catch {
+                // Try the next IP provider.
+            }
             if (!data?.latitude) {
                 try {
                     const r = await fetch('https://ipwho.is/');
                     if (r.ok) { const d = await r.json(); data = { city: d.city, country_name: d.country, latitude: d.latitude, longitude: d.longitude, timezone: d.timezone?.id }; }
-                } catch { }
+                } catch {
+                    // Keep the current location if both IP providers fail.
+                }
             }
             if (data?.latitude) {
                 onUpdate('location', { city: data.city || 'Unknown', country: data.country_name || data.country || '', lat: data.latitude, lon: data.longitude, timezone: data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone });
@@ -194,14 +222,13 @@ export default function Settings({ settings, onUpdate, onBack }) {
     };
 
     const handlePlayMuezzin = (m) => {
-        // Stop any currently playing Adhan preview
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.src = '';
-            audioRef.current = null;
-        }
         // Toggle off if same muezzin clicked again
-        if (playingId === m.id) { setPlayingId(null); return; }
+        if (playingId === m.id) {
+            stopPreviewAudio();
+            return;
+        }
+
+        stopPreviewAudio();
 
         const resolvedUrl = AUDIO_BASE + m.audioFile;
         console.log('[Adhan] Preview URL:', resolvedUrl, '| muezzin:', m.id);
@@ -212,16 +239,23 @@ export default function Settings({ settings, onUpdate, onBack }) {
         }
 
         const audio = new Audio(resolvedUrl);
+        const previewToken = previewTokenRef.current;
         audio.preload = 'auto';
         audioRef.current = audio;
         setPlayingId(m.id);
         audio.play().catch((err) => {
+            if (previewToken !== previewTokenRef.current) return;
             console.error('[Adhan] play() rejected for', m.id, '-', err.message);
             setPlayingId(null);
             audioRef.current = null;
         });
-        audio.onended = () => { setPlayingId(null); audioRef.current = null; };
+        audio.onended = () => {
+            if (previewToken !== previewTokenRef.current) return;
+            setPlayingId(null);
+            audioRef.current = null;
+        };
         audio.onerror = () => {
+            if (previewToken !== previewTokenRef.current) return;
             const code = audio.error?.code;
             const msg = audio.error?.message || 'unknown';
             console.error('[Adhan] Audio error for', m.id, '- code:', code, msg);
@@ -380,6 +414,10 @@ export default function Settings({ settings, onUpdate, onBack }) {
                     <div className="settings-item">
                         <span className="settings-label">{t('settings.notificationsEnabled')}</span>
                         <label className="toggle"><input type="checkbox" checked={settings.notificationsEnabled} onChange={(e) => onUpdate('notificationsEnabled', e.target.checked)} /><span className="toggle-slider" /></label>
+                    </div>
+                    <div className="settings-item">
+                        <span className="settings-label">{t('settings.autoStart')}</span>
+                        <label className="toggle"><input type="checkbox" checked={settings.autoStart} onChange={(e) => onUpdate('autoStart', e.target.checked)} /><span className="toggle-slider" /></label>
                     </div>
                 </div>
 

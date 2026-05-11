@@ -24,7 +24,9 @@ function getAudioBase() {
   try {
     const loc = window.location.href;
     if (loc.startsWith('file://')) return `${loc.replace(/\/[^/]+$/, '')}/audio/`;
-  } catch { }
+  } catch {
+    // Fall back to the Vite public path.
+  }
   return '/audio/';
 }
 
@@ -66,7 +68,9 @@ async function autoDetectLocation(language = 'ar', options = {}) {
           city = addr.city || addr.town || addr.village || addr.county || '';
           country = addr.country || '';
         }
-      } catch { }
+      } catch {
+        // Location detection can continue without a display city.
+      }
 
       return {
         city: city || `${lat.toFixed(4)}, ${lon.toFixed(4)}`,
@@ -186,7 +190,7 @@ function App() {
             location: null,
             calculationMethod: 'UmmAlQura', madhab: 'Shafi', language: 'ar', theme: 'dark',
             timeFormat: '12h', audioEnabled: true, notificationsEnabled: true,
-            autoStart: false, highLatitudeRule: 'MiddleOfTheNight',
+            autoStart: true, highLatitudeRule: 'MiddleOfTheNight',
             offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
             muezzin: 'makkah',
           };
@@ -328,9 +332,30 @@ function App() {
         }
 
         if (settings.audioEnabled) {
+          if (window.electronAPI?.muteOtherMediaForAdhan) {
+            window.electronAPI.muteOtherMediaForAdhan().catch((err) => {
+              console.warn('[Adhan] Failed to mute other media:', err);
+            });
+          }
+
           const audio = new Audio(audioUrl);
+          let mediaRestored = false;
+          const restoreOtherMedia = () => {
+            if (mediaRestored) return;
+            mediaRestored = true;
+            if (window.electronAPI?.restoreMediaAfterAdhan) {
+              window.electronAPI.restoreMediaAfterAdhan().catch((err) => {
+                console.warn('[Adhan] Failed to restore other media:', err);
+              });
+            }
+          };
+
+          audio.addEventListener('ended', restoreOtherMedia, { once: true });
+          audio.addEventListener('error', restoreOtherMedia, { once: true });
+          setTimeout(restoreOtherMedia, 4 * 60 * 1000);
           audio.play().catch((err) => {
             console.error('[Adhan] Failed to autoplay adhan audio:', err);
+            restoreOtherMedia();
           });
         }
       }

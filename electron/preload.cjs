@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Notifications
     showNotification: (title, body) => ipcRenderer.send('notification:show', title, body),
     checkForUpdates: () => ipcRenderer.invoke('update:check'),
+    muteOtherMediaForAdhan: () => ipcRenderer.invoke('media:muteOthersForAdhan'),
+    restoreMediaAfterAdhan: () => ipcRenderer.invoke('media:restoreMutedForAdhan'),
     onUpdateAvailable: (callback) => {
         const listener = (_event, payload) => callback(payload);
         ipcRenderer.on('update:available', listener);

@@ -4,6 +4,23 @@ This file tracks functional changes, feature additions, and corresponding `.exe`
 
 ---
 
+## [v1.0.10] - Windows Startup + Media Resume (2026-05-11)
+
+### Added
+- **Windows Startup**: App now registers itself to start automatically with Windows and opens hidden in the system tray.
+- **Media Muting During Azan**: Active non-app Windows audio sessions are muted when the Azan starts, then restored after the Azan finishes.
+- **Startup Setting Toggle**: Added a Settings toggle for enabling or disabling Windows startup behavior.
+
+### Fixed
+- **Muezzin Preview Switching**: Fixed overlapping preview audio when selecting one Azan voice and then quickly playing another voice in Settings.
+- **Audio Restore Safety**: Restores only media sessions muted by the app, avoiding changes to sessions that were already muted by the user.
+
+### Build / Distribution
+- **Target OS**: Windows AppX (`.appx`) for Microsoft Store
+- **Release Package**: `Let's Pray Store 1.0.10.appx`
+
+---
+
 ## [v1.0.9] - AppX Location Reliability + Notification Icon (2026-03-04)
 
 ### Fixed

@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 
 const PRAYER_KEYS = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-export default function Home({ settings, onOpenSettings, onUpdateSetting }) {
+export default function Home({ settings, onOpenSettings }) {
     const { t, i18n } = useTranslation();
     const [now, setNow] = useState(new Date());
     const timerRef = useRef(null);
@@ -22,15 +22,13 @@ export default function Home({ settings, onOpenSettings, onUpdateSetting }) {
         if (lat == null || lon == null) return null;
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         return getPrayerTimes(today, lat, lon, settings.calculationMethod, settings.madhab, settings.highLatitudeRule, settings.offsets);
-    }, [lat, lon, settings.calculationMethod, settings.madhab, settings.highLatitudeRule, settings.offsets,
-        now.getFullYear(), now.getMonth(), now.getDate()]);
+    }, [lat, lon, settings.calculationMethod, settings.madhab, settings.highLatitudeRule, settings.offsets, now]);
 
     const tomorrowTimes = useMemo(() => {
         if (lat == null || lon == null) return null;
         const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
         return getPrayerTimes(tomorrow, lat, lon, settings.calculationMethod, settings.madhab, settings.highLatitudeRule, settings.offsets);
-    }, [lat, lon, settings.calculationMethod, settings.madhab, settings.highLatitudeRule, settings.offsets,
-        now.getFullYear(), now.getMonth(), now.getDate()]);
+    }, [lat, lon, settings.calculationMethod, settings.madhab, settings.highLatitudeRule, settings.offsets, now]);
 
     const next = useMemo(() => {
         if (!times) return null;
@@ -49,7 +47,7 @@ export default function Home({ settings, onOpenSettings, onUpdateSetting }) {
         return getCountdown(now, next.time);
     }, [now, next]);
 
-    const hijri = useMemo(() => getHijriDate(now, i18n.language), [now.getDate(), i18n.language]);
+    const hijri = useMemo(() => getHijriDate(now, i18n.language), [now, i18n.language]);
 
     const gregorianDate = isArabic
         ? new Intl.DateTimeFormat('ar', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(now)
