@@ -273,6 +273,7 @@ async function initStore() {
         audioEnabled: true,
         notificationsEnabled: true,
         autoStart: true,
+        autoStartUserConfigured: false,
         highLatitudeRule: 'MiddleOfTheNight',
         offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
         muezzin: 'makkah',
@@ -470,7 +471,12 @@ function createTray() {
 app.whenReady().then(async () => {
   if (!startHidden) createSplash();
   await initStore();
-  if (store) applyAutoStart(store.get('autoStart'));
+  if (store) {
+    if (!store.get('autoStartUserConfigured') && store.get('autoStart') !== true) {
+      store.set('autoStart', true);
+    }
+    applyAutoStart(store.get('autoStart'));
+  }
   createWindow();
   createTray();
   startUpdateChecks();
@@ -503,7 +509,10 @@ ipcMain.handle('location:detectIp', async () => detectLocationByIp());
 ipcMain.on('store:set', (_e, key, value) => {
   if (!store) return;
   store.set(key, value);
-  if (key === 'autoStart') applyAutoStart(value);
+  if (key === 'autoStart') {
+    store.set('autoStartUserConfigured', true);
+    applyAutoStart(value);
+  }
 });
 ipcMain.handle('update:check', async () => checkForUpdates({ notifyRenderer: false }));
 ipcMain.handle('media:muteOthersForAdhan', async () => {

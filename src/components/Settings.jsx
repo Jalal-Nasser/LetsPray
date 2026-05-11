@@ -90,7 +90,7 @@ const MUEZZINS = [
 const DEFAULT_SETTINGS = {
     location: null, calculationMethod: 'UmmAlQura', madhab: 'Shafi', language: 'ar',
     theme: 'dark', timeFormat: '12h', audioEnabled: true, notificationsEnabled: true,
-    autoStart: true, highLatitudeRule: 'MiddleOfTheNight',
+    autoStart: true, autoStartUserConfigured: false, highLatitudeRule: 'MiddleOfTheNight',
     offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
     // 'muezzin' key = default Adhan voice. Valid IDs: makkah | madinah | mishary | kurtishi | abdulbasit | husary | minshawi
     muezzin: 'makkah',

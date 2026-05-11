@@ -1,0 +1,3 @@
+<desktop:Extension Category="windows.startupTask" Executable="app\Let's Pray.exe" EntryPoint="Windows.FullTrustApplication">
+  <desktop:StartupTask TaskId="LetsPrayStartup" Enabled="true" DisplayName="Let's Pray" />
+</desktop:Extension>

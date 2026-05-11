@@ -190,7 +190,7 @@ function App() {
             location: null,
             calculationMethod: 'UmmAlQura', madhab: 'Shafi', language: 'ar', theme: 'dark',
             timeFormat: '12h', audioEnabled: true, notificationsEnabled: true,
-            autoStart: true, highLatitudeRule: 'MiddleOfTheNight',
+            autoStart: true, autoStartUserConfigured: false, highLatitudeRule: 'MiddleOfTheNight',
             offsets: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
             muezzin: 'makkah',
           };
@@ -241,6 +241,9 @@ function App() {
     setSettings(prev => {
       const updated = { ...prev, [key]: value };
       if (window.electronAPI) window.electronAPI.setStoreValue(key, value);
+      if (key === 'autoStart' && window.electronAPI) {
+        window.electronAPI.setStoreValue('autoStartUserConfigured', true);
+      }
       if (key === 'language') {
         i18n.changeLanguage(value);
         document.documentElement.setAttribute('dir', value === 'ar' ? 'rtl' : 'ltr');

@@ -4,6 +4,18 @@ This file tracks functional changes, feature additions, and corresponding `.exe`
 
 ---
 
+## [v1.0.11] - Microsoft Store Startup Fix (2026-05-11)
+
+### Fixed
+- **Microsoft Store Startup**: Added the required AppX `windows.startupTask` manifest extension so the Store package can launch with Windows after reboot.
+- **Startup Migration**: Existing users who inherited the old disabled default are moved to startup enabled unless they explicitly turn the startup setting off after this version.
+
+### Build / Distribution
+- **Target OS**: Windows AppX (`.appx`) for Microsoft Store
+- **Release Package**: `Let's Pray Store 1.0.11.appx`
+
+---
+
 ## [v1.0.10] - Windows Startup + Media Resume (2026-05-11)
 
 ### Added
